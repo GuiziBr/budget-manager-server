@@ -24,7 +24,7 @@ Budget Manager Server is a robust backend service for personal budget management
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v20+ recommended)
+- [Node.js](https://nodejs.org/) (v24+ required)
 - [Docker](https://www.docker.com/products/docker-desktop/) & [Docker Compose](https://docs.docker.com/compose/install/)
 
 ### Quick Start (with Docker)
@@ -99,19 +99,3 @@ npm run test:cov
 ```
 
 ---
-
-## 🤝 Contributing
-
-1. Fork the repository.
-2. Create your feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`).
-4. Push to the branch (`git push origin feature/amazing-feature`).
-5. Open a Pull Request.
-
----
-
-## 📄 License
-
-This project is **UNLICENSED**. See `package.json` for details.
-
-Developed with ❤️ by [Ricardo Guizi](https://github.com/GuiziBr).
