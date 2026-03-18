@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:16.2-alpine3.19
+    container_name: budget-manager-db
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=budget-manager
+    volumes:
+      - ./db:/var/lib/postgresql/data
+
+  server:
+    build:
+      context: .
+    command: npm run start:dev
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./:/server
+      - /server/node_modules
+      - /server/node_modules/.prisma
+    depends_on:
+      - db
