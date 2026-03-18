@@ -1,0 +1,33 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.4.8/schema.json",
+	"extends": ["ultracite/biome/nestjs"],
+	"javascript": {
+		"formatter": {
+			"semicolons": "asNeeded",
+			"trailingCommas": "none",
+			"bracketSpacing": true
+		},
+		"parser": {
+			"unsafeParameterDecoratorsEnabled": true
+		}
+	},
+	"linter": {
+		"rules": {
+			"style": {
+				"noParameterProperties": "off",
+				"useImportType": "off",
+				"noMagicNumbers": "off",
+				"noEnum": "off"
+			}
+		}
+	},
+	"files": {
+		"includes": [
+			"src/**/*.ts",
+			"test/**/*.ts",
+			"prisma/**",
+			"!prisma/migrations",
+			"!infra/"
+		]
+	}
+}
