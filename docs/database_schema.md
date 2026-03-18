@@ -1,4 +1,4 @@
-# ledgr-api — Database Schema
+# Budget Manager Server — Database Schema
 
 ## Entity Relationship Diagram
 

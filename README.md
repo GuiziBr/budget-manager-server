@@ -1,10 +1,10 @@
-# Ledgr API — Personal Budget Management Server
+# Budget Manager Server
 
 [![CI](https://github.com/GuiziBr/budget-manager-server/actions/workflows/ci.yml/badge.svg)](https://github.com/GuiziBr/budget-manager-server/actions/workflows/ci.yml)
 [![Biome](https://img.shields.io/badge/Linter-Biome-60a5fa?logo=biome)](https://biomejs.dev)
 [![NestJS](https://img.shields.io/badge/Framework-NestJS-e0234e?logo=nestjs)](https://nestjs.com)
 
-Ledgr API is a robust backend service for personal budget management. It supports monthly budget periods, expense tracking (including installments and recurring payments), income management, and budget envelopes that pull real-time data from external spend APIs.
+Budget Manager Server is a robust backend service for personal budget management. It supports monthly budget periods, expense tracking (including installments and recurring payments), income management, and budget envelopes that pull real-time data from external spend APIs.
 
 ---
 
