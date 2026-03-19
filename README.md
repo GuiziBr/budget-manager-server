@@ -64,18 +64,28 @@ Copy `.env.example` to `.env` and adjust the variables:
 |---|---|
 | `npm run start:dev` | Start the server in watch mode |
 | `npm run build` | Build the project for production |
-| `npm run lint` | Run Biome linting and formatting fixes |
+| `npm run lint` | Run Biome linting and auto-fix |
+| `npm run format` | Run Biome formatting and auto-fix |
 | `npm run test` | Run unit tests with Vitest |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:cov` | Generate coverage report |
+| `npm run test:e2e` | Run end-to-end tests |
 | `npm run migrate` | Run Prisma migrations locally |
 | `npm run docker:up` | Start the full environment with Docker Compose |
+| `npm run docker:build` | Rebuild and start Docker containers |
+| `npm run docker:down` | Stop and remove Docker containers and volumes |
 | `npm run docker:migrate:dev` | Run Prisma migrations inside the Docker container |
+| `npm run docker:migrate:deploy` | Deploy migrations inside the Docker container |
+| `npm run docker:seed` | Seed the database inside the Docker container |
 
 ---
 
 ## 🏗️ Architecture
 
-- **`src/infra/`**: Infrastructure layer (Environment, Modules, etc.).
-- **`src/`**: Core application logic (Controllers, Services, Modules).
+The project follows **Domain-Driven Design (DDD)**:
+
+- **`src/domains/`**: Domain modules — each domain owns its entity, DTOs, abstract repository, service, controller, and module.
+- **`src/infra/`**: Infrastructure layer — environment config, `DatabaseService` (Prisma), and Prisma repository implementations.
 - **`prisma/`**: Database schema and migrations.
 - **`docs/`**: Detailed documentation and [Database Schema design](docs/database_schema.md).
 

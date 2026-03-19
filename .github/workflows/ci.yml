@@ -7,9 +7,13 @@ on:
     branches: [development]
 
 jobs:
-  ci:
+  unit-tests:
     name: Build & Test
     runs-on: ubuntu-latest
+
+    env:
+      PORT: 3000
+      DATABASE_URL: postgresql://admin:admin@budget-manager-db:5432/expenses?schema=public
 
     steps:
       - name: Checkout code
@@ -31,4 +35,4 @@ jobs:
         run: npm run lint
 
       - name: Unit tests
-        run: npm run test
+        run: npm run test:cov

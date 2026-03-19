@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Connection URL is configured in prisma.config.ts (Prisma v7+)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model BudgetPeriod {
+  id        String    @id @default(uuid())
+  year      Int
+  month     Int
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  expenses       Expense[]
+  incomes        Income[]
+  budgetEnvelopes BudgetEnvelope[]
+
+  // Uniqueness enforced via partial index in migration (WHERE deleted_at IS NULL)
+  @@map("budget_periods")
+}
+
+model Category {
+  id               String    @id @default(uuid())
+  name             String
+  hasBudgetEnvelope Boolean  @default(false) @map("has_budget_envelope")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  expenses          Expense[]
+  recurringExpenses RecurringExpense[]
+  budgetEnvelopes   BudgetEnvelope[]
+
+  @@map("categories")
+}
+
+model PaymentType {
+  id           String    @id @default(uuid())
+  name         String
+  hasStatement Boolean   @default(false) @map("has_statement")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  expenses          Expense[]
+  recurringExpenses RecurringExpense[]
+
+  @@map("payment_types")
+}
+
+model Bank {
+  id        String    @id @default(uuid())
+  name      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  expenses          Expense[]
+  recurringExpenses RecurringExpense[]
+
+  @@map("banks")
+}
+
+model Store {
+  id        String    @id @default(uuid())
+  name      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  expenses          Expense[]
+  recurringExpenses RecurringExpense[]
+
+  @@map("stores")
+}
+
+model InstallmentGroup {
+  id                   String    @id @default(uuid())
+  description          String
+  amountPerInstallment Decimal   @map("amount_per_installment") @db.Decimal(10, 2)
+  totalInstallments    Int       @map("total_installments")
+  paymentIntervalDays  Int       @map("payment_interval_days")
+  firstPurchaseDate    DateTime  @map("first_purchase_date") @db.Date
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  deletedAt            DateTime? @map("deleted_at")
+
+  expenses Expense[]
+
+  @@map("installment_groups")
+}
+
+model RecurringExpense {
+  id            String    @id @default(uuid())
+  categoryId    String    @map("category_id")
+  paymentTypeId String    @map("payment_type_id")
+  bankId        String?   @map("bank_id")
+  storeId       String?   @map("store_id")
+  description   String
+  amount        Decimal   @db.Decimal(10, 2)
+  startedAt     DateTime  @map("started_at") @db.Date
+  cancelledAt   DateTime? @map("cancelled_at") @db.Date
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  category    Category    @relation(fields: [categoryId], references: [id])
+  paymentType PaymentType @relation(fields: [paymentTypeId], references: [id])
+  bank        Bank?       @relation(fields: [bankId], references: [id])
+  store       Store?      @relation(fields: [storeId], references: [id])
+  expenses    Expense[]
+
+  @@map("recurring_expenses")
+}
+
+model Expense {
+  id                 String    @id @default(uuid())
+  budgetPeriodId     String    @map("budget_period_id")
+  categoryId         String    @map("category_id")
+  paymentTypeId      String    @map("payment_type_id")
+  bankId             String?   @map("bank_id")
+  storeId            String?   @map("store_id")
+  installmentGroupId String?   @map("installment_group_id")
+  recurringExpenseId String?   @map("recurring_expense_id")
+  description        String
+  installmentNumber  Int?      @map("installment_number")
+  purchaseDate       DateTime? @map("purchase_date") @db.Date
+  dueDate            DateTime? @map("due_date") @db.Date
+  paidDate           DateTime? @map("paid_date") @db.Date
+  amount             Decimal   @db.Decimal(10, 2)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  deletedAt          DateTime? @map("deleted_at")
+
+  budgetPeriod     BudgetPeriod      @relation(fields: [budgetPeriodId], references: [id])
+  category         Category          @relation(fields: [categoryId], references: [id])
+  paymentType      PaymentType       @relation(fields: [paymentTypeId], references: [id])
+  bank             Bank?             @relation(fields: [bankId], references: [id])
+  store            Store?            @relation(fields: [storeId], references: [id])
+  installmentGroup InstallmentGroup? @relation(fields: [installmentGroupId], references: [id])
+  recurringExpense RecurringExpense? @relation(fields: [recurringExpenseId], references: [id])
+
+  @@map("expenses")
+}
+
+model BudgetEnvelope {
+  id              String    @id @default(uuid())
+  budgetPeriodId  String    @map("budget_period_id")
+  categoryId      String    @map("category_id")
+  allocatedAmount Decimal   @map("allocated_amount") @db.Decimal(10, 2)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  budgetPeriod BudgetPeriod @relation(fields: [budgetPeriodId], references: [id])
+  category     Category     @relation(fields: [categoryId], references: [id])
+
+  // Uniqueness enforced via partial index in migration (WHERE deleted_at IS NULL)
+  @@map("budget_envelopes")
+}
+
+model Income {
+  id             String    @id @default(uuid())
+  budgetPeriodId String    @map("budget_period_id")
+  description    String
+  amount         Decimal   @db.Decimal(10, 2)
+  isSalary       Boolean   @default(false) @map("is_salary")
+  receivedDate   DateTime? @map("received_date") @db.Date
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  budgetPeriod BudgetPeriod @relation(fields: [budgetPeriodId], references: [id])
+
+  @@map("incomes")
+}
