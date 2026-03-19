@@ -24,12 +24,12 @@ export class PrismaCategoryRepository extends CategoryRepository {
 	}
 
 	async update(id: string, data: UpdateCategoryDto): Promise<Category> {
-		return this.db.category.update({ where: { id }, data })
+		return this.db.category.update({ where: { id, deletedAt: null }, data })
 	}
 
 	async delete(id: string): Promise<void> {
 		await this.db.category.update({
-			where: { id },
+			where: { id, deletedAt: null },
 			data: { deletedAt: new Date() }
 		})
 	}
