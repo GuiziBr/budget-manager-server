@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common"
+import {
+	HttpException,
+	Injectable,
+	InternalServerErrorException,
+	Logger,
+	NotFoundException
+} from "@nestjs/common"
 import type { CreateCategoryDto } from "./dtos/create-category.dto"
 import type { UpdateCategoryDto } from "./dtos/update-category.dto"
 import type { Category } from "./entities/category.entity"
@@ -12,32 +18,60 @@ export class CategoryService {
 
 	async findAll(): Promise<Category[]> {
 		this.logger.debug("Fetching all categories")
-		return this.categoryRepository.findAll()
+		try {
+			return await this.categoryRepository.findAll()
+		} catch (error) {
+			this.logger.error("Failed to fetch categories", error)
+			throw new InternalServerErrorException()
+		}
 	}
 
 	async findById(id: string): Promise<Category> {
 		this.logger.debug(`Fetching category with id: ${id}`)
-		const category = await this.categoryRepository.findById(id)
-		if (!category) {
-			throw new NotFoundException(`Category with id ${id} not found`)
+		try {
+			const category = await this.categoryRepository.findById(id)
+			if (!category) {
+				throw new NotFoundException(`Category with id ${id} not found`)
+			}
+			return category
+		} catch (error) {
+			if (error instanceof HttpException) throw error
+			this.logger.error(`Failed to fetch category with id: ${id}`, error)
+			throw new InternalServerErrorException()
 		}
-		return category
 	}
 
 	async create(dto: CreateCategoryDto): Promise<Category> {
 		this.logger.debug(`Creating category: ${dto.name}`)
-		return this.categoryRepository.create(dto)
+		try {
+			return await this.categoryRepository.create(dto)
+		} catch (error) {
+			this.logger.error("Failed to create category", error)
+			throw new InternalServerErrorException()
+		}
 	}
 
 	async update(id: string, dto: UpdateCategoryDto): Promise<Category> {
 		this.logger.debug(`Updating category with id: ${id}`)
-		await this.findById(id)
-		return this.categoryRepository.update(id, dto)
+		try {
+			await this.findById(id)
+			return await this.categoryRepository.update(id, dto)
+		} catch (error) {
+			if (error instanceof HttpException) throw error
+			this.logger.error(`Failed to update category with id: ${id}`, error)
+			throw new InternalServerErrorException()
+		}
 	}
 
 	async delete(id: string): Promise<void> {
 		this.logger.debug(`Deleting category with id: ${id}`)
-		await this.findById(id)
-		return this.categoryRepository.delete(id)
+		try {
+			await this.findById(id)
+			return await this.categoryRepository.delete(id)
+		} catch (error) {
+			if (error instanceof HttpException) throw error
+			this.logger.error(`Failed to delete category with id: ${id}`, error)
+			throw new InternalServerErrorException()
+		}
 	}
 }

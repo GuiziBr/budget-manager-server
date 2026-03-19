@@ -1,4 +1,4 @@
-import { NotFoundException } from "@nestjs/common"
+import { InternalServerErrorException, NotFoundException } from "@nestjs/common"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { CategoryService } from "./category.service"
 import type { Category } from "./entities/category.entity"
@@ -36,6 +36,13 @@ describe("CategoryService", () => {
 			expect(result).toEqual([mockCategory])
 			expect(mockRepository.findAll).toHaveBeenCalledOnce()
 		})
+
+		it("should throw InternalServerErrorException on unexpected error", async () => {
+			vi.mocked(mockRepository.findAll).mockRejectedValue(new Error("DB down"))
+			await expect(service.findAll()).rejects.toThrow(
+				InternalServerErrorException
+			)
+		})
 	})
 
 	describe("findById", () => {
@@ -52,6 +59,13 @@ describe("CategoryService", () => {
 				NotFoundException
 			)
 		})
+
+		it("should throw InternalServerErrorException on unexpected error", async () => {
+			vi.mocked(mockRepository.findById).mockRejectedValue(new Error("DB down"))
+			await expect(service.findById("uuid-1")).rejects.toThrow(
+				InternalServerErrorException
+			)
+		})
 	})
 
 	describe("create", () => {
@@ -61,6 +75,13 @@ describe("CategoryService", () => {
 			const result = await service.create(dto)
 			expect(result).toEqual(mockCategory)
 			expect(mockRepository.create).toHaveBeenCalledWith(dto)
+		})
+
+		it("should throw InternalServerErrorException on unexpected error", async () => {
+			vi.mocked(mockRepository.create).mockRejectedValue(new Error("DB down"))
+			await expect(
+				service.create({ name: "Groceries", hasBudgetEnvelope: true })
+			).rejects.toThrow(InternalServerErrorException)
 		})
 	})
 
@@ -81,6 +102,14 @@ describe("CategoryService", () => {
 				service.update("uuid-missing", { name: "x" })
 			).rejects.toThrow(NotFoundException)
 		})
+
+		it("should throw InternalServerErrorException on unexpected error", async () => {
+			vi.mocked(mockRepository.findById).mockResolvedValue(mockCategory)
+			vi.mocked(mockRepository.update).mockRejectedValue(new Error("DB down"))
+			await expect(service.update("uuid-1", { name: "x" })).rejects.toThrow(
+				InternalServerErrorException
+			)
+		})
 	})
 
 	describe("delete", () => {
@@ -95,6 +124,14 @@ describe("CategoryService", () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(null)
 			await expect(service.delete("uuid-missing")).rejects.toThrow(
 				NotFoundException
+			)
+		})
+
+		it("should throw InternalServerErrorException on unexpected error", async () => {
+			vi.mocked(mockRepository.findById).mockResolvedValue(mockCategory)
+			vi.mocked(mockRepository.delete).mockRejectedValue(new Error("DB down"))
+			await expect(service.delete("uuid-1")).rejects.toThrow(
+				InternalServerErrorException
 			)
 		})
 	})
