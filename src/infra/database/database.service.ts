@@ -6,11 +6,16 @@ import { Pool } from "pg"
 import type { Env } from "../env"
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit {
+export class DatabaseService extends PrismaClient implements OnModuleInit {
 	constructor(configService: ConfigService<Env, true>) {
 		const connectionString = configService.get("DATABASE_URL", { infer: true })
-		const pool = new Pool({ connectionString })
-		const adapter = new PrismaPg(pool as any)
+
+		// Use the specific type expected by PrismaPg from its constructor parameters
+		// to resolve version conflicts between @types/pg versions.
+		const poolOrConfig = new Pool({
+			connectionString
+		}) as unknown as ConstructorParameters<typeof PrismaPg>[0]
+		const adapter = new PrismaPg(poolOrConfig)
 
 		super({ adapter })
 	}
