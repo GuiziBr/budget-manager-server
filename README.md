@@ -64,7 +64,8 @@ Copy `.env.example` to `.env` and adjust the variables:
 |---|---|
 | `npm run start:dev` | Start the server in watch mode |
 | `npm run build` | Build the project for production |
-| `npm run lint` | Run Biome linting and formatting fixes |
+| `npm run lint` | Run Biome linting and auto-fix |
+| `npm run format` | Run Biome formatting and auto-fix |
 | `npm run test` | Run unit tests with Vitest |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:cov` | Generate coverage report |
@@ -81,8 +82,10 @@ Copy `.env.example` to `.env` and adjust the variables:
 
 ## 🏗️ Architecture
 
-- **`src/infra/`**: Infrastructure layer (Environment, Modules, etc.).
-- **`src/`**: Core application logic (Controllers, Services, Modules).
+The project follows **Domain-Driven Design (DDD)**:
+
+- **`src/domains/`**: Domain modules — each domain owns its entity, DTOs, abstract repository, service, controller, and module.
+- **`src/infra/`**: Infrastructure layer — environment config, `DatabaseService` (Prisma), and Prisma repository implementations.
 - **`prisma/`**: Database schema and migrations.
 - **`docs/`**: Detailed documentation and [Database Schema design](docs/database_schema.md).
 

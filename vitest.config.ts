@@ -7,4 +7,10 @@ export default defineConfig({
 			"@": resolve(__dirname, "src"),
 		},
 	},
+	test: {
+		coverage: {
+			provider: "v8",
+			exclude: ["src/infra/database/prisma/repositories/**"],
+		},
+	},
 })
