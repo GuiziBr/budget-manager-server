@@ -66,9 +66,16 @@ Copy `.env.example` to `.env` and adjust the variables:
 | `npm run build` | Build the project for production |
 | `npm run lint` | Run Biome linting and formatting fixes |
 | `npm run test` | Run unit tests with Vitest |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:cov` | Generate coverage report |
+| `npm run test:e2e` | Run end-to-end tests |
 | `npm run migrate` | Run Prisma migrations locally |
 | `npm run docker:up` | Start the full environment with Docker Compose |
+| `npm run docker:build` | Rebuild and start Docker containers |
+| `npm run docker:down` | Stop and remove Docker containers and volumes |
 | `npm run docker:migrate:dev` | Run Prisma migrations inside the Docker container |
+| `npm run docker:migrate:deploy` | Deploy migrations inside the Docker container |
+| `npm run docker:seed` | Seed the database inside the Docker container |
 
 ---
 
