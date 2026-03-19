@@ -4,6 +4,6 @@ import { DatabaseService } from "./database/database.service"
 @Module({
 	imports: [],
 	providers: [DatabaseService],
-	exports: [DatabaseService],
+	exports: [DatabaseService]
 })
 export class InfraModule {}

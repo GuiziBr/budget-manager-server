@@ -3,7 +3,7 @@ import { ConfigService } from "@nestjs/config"
 import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"
 import { Pool } from "pg"
-import type { Env } from "../env"
+import type { Env } from "@/infra/env"
 
 @Injectable()
 export class DatabaseService extends PrismaClient implements OnModuleInit {
