@@ -141,10 +141,10 @@ CREATE TABLE "incomes" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "budget_periods_year_month_key" ON "budget_periods"("year", "month");
+CREATE UNIQUE INDEX "budget_periods_year_month_key" ON "budget_periods"("year", "month") WHERE deleted_at IS NULL;
 
 -- CreateIndex
-CREATE UNIQUE INDEX "budget_envelopes_budget_period_id_category_id_key" ON "budget_envelopes"("budget_period_id", "category_id");
+CREATE UNIQUE INDEX "budget_envelopes_budget_period_id_category_id_key" ON "budget_envelopes"("budget_period_id", "category_id") WHERE deleted_at IS NULL;
 
 -- AddForeignKey
 ALTER TABLE "recurring_expenses" ADD CONSTRAINT "recurring_expenses_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -22,7 +22,7 @@ model BudgetPeriod {
   incomes        Income[]
   budgetEnvelopes BudgetEnvelope[]
 
-  @@unique([year, month])
+  // Uniqueness enforced via partial index in migration (WHERE deleted_at IS NULL)
   @@map("budget_periods")
 }
 
@@ -162,7 +162,7 @@ model BudgetEnvelope {
   budgetPeriod BudgetPeriod @relation(fields: [budgetPeriodId], references: [id])
   category     Category     @relation(fields: [categoryId], references: [id])
 
-  @@unique([budgetPeriodId, categoryId])
+  // Uniqueness enforced via partial index in migration (WHERE deleted_at IS NULL)
   @@map("budget_envelopes")
 }
 
