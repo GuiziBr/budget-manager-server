@@ -5,4 +5,4 @@ export const updateCategorySchema = z.object({
 	hasBudgetEnvelope: z.boolean().optional()
 })
 
-export type UpdateCategoryDto = z.infer<typeof updateCategorySchema>
+export type UpdateCategoryDTO = z.infer<typeof updateCategorySchema>

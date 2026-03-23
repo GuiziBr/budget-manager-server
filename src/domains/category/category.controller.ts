@@ -11,15 +11,15 @@ import {
 } from "@nestjs/common"
 import { ZodValidationPipe } from "@/infra/pipes/zod-validation.pipe"
 import { CategoryService } from "./category.service"
+import { categoryParamSchema } from "./dtos/category-param.dto"
 import {
-	type CreateCategoryDto,
+	type CreateCategoryDTO,
 	createCategorySchema
 } from "./dtos/create-category.dto"
 import {
-	type UpdateCategoryDto,
+	type UpdateCategoryDTO,
 	updateCategorySchema
 } from "./dtos/update-category.dto"
-import { categoryParamSchema } from "./dtos/category-param.dto"
 import type { Category } from "./entities/category.entity"
 
 @Controller("categories")
@@ -40,7 +40,7 @@ export class CategoryController {
 
 	@Post()
 	create(
-		@Body(new ZodValidationPipe(createCategorySchema)) dto: CreateCategoryDto
+		@Body(new ZodValidationPipe(createCategorySchema)) dto: CreateCategoryDTO
 	): Promise<Category> {
 		return this.categoryService.create(dto)
 	}
@@ -48,7 +48,7 @@ export class CategoryController {
 	@Patch(":id")
 	update(
 		@Param("id", new ZodValidationPipe(categoryParamSchema)) id: string,
-		@Body(new ZodValidationPipe(updateCategorySchema)) dto: UpdateCategoryDto
+		@Body(new ZodValidationPipe(updateCategorySchema)) dto: UpdateCategoryDTO
 	): Promise<Category> {
 		return this.categoryService.update(id, dto)
 	}

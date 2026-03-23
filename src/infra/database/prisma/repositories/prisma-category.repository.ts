@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common"
-import type { CreateCategoryDto } from "@/domains/category/dtos/create-category.dto"
-import type { UpdateCategoryDto } from "@/domains/category/dtos/update-category.dto"
+import type { CreateCategoryDTO } from "@/domains/category/dtos/create-category.dto"
+import type { UpdateCategoryDTO } from "@/domains/category/dtos/update-category.dto"
 import type { Category } from "@/domains/category/entities/category.entity"
 import { CategoryRepository } from "@/domains/category/repositories/category.repository"
 import { DatabaseService } from "@/infra/database/database.service"
@@ -19,11 +19,11 @@ export class PrismaCategoryRepository extends CategoryRepository {
 		return this.db.category.findFirst({ where: { id, deletedAt: null } })
 	}
 
-	async create(data: CreateCategoryDto): Promise<Category> {
+	async create(data: CreateCategoryDTO): Promise<Category> {
 		return this.db.category.create({ data })
 	}
 
-	async update(id: string, data: UpdateCategoryDto): Promise<Category> {
+	async update(id: string, data: UpdateCategoryDTO): Promise<Category> {
 		return this.db.category.update({ where: { id, deletedAt: null }, data })
 	}
 
