@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common"
 import { ConfigModule } from "@nestjs/config"
 import { CategoryModule } from "@/domains/category/category.module"
+import { PaymentTypeModule } from "@/domains/payment-type/payment-type.module"
 import { envSchema } from "@/infra/env"
 import { InfraModule } from "@/infra/infra.module"
 
@@ -11,7 +12,8 @@ import { InfraModule } from "@/infra/infra.module"
 			isGlobal: true
 		}),
 		InfraModule,
-		CategoryModule
+		CategoryModule,
+		PaymentTypeModule
 	]
 })
 export class AppModule {}
