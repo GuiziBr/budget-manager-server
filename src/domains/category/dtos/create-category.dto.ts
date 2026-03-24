@@ -5,4 +5,4 @@ export const createCategorySchema = z.object({
 	hasBudgetEnvelope: z.boolean()
 })
 
-export type CreateCategoryDto = z.infer<typeof createCategorySchema>
+export type CreateCategoryDTO = z.infer<typeof createCategorySchema>

@@ -5,8 +5,8 @@ import {
 	Logger,
 	NotFoundException
 } from "@nestjs/common"
-import type { CreateCategoryDto } from "./dtos/create-category.dto"
-import type { UpdateCategoryDto } from "./dtos/update-category.dto"
+import type { CreateCategoryDTO } from "./dtos/create-category.dto"
+import type { UpdateCategoryDTO } from "./dtos/update-category.dto"
 import type { Category } from "./entities/category.entity"
 import { CategoryRepository } from "./repositories/category.repository"
 
@@ -41,7 +41,7 @@ export class CategoryService {
 		}
 	}
 
-	async create(dto: CreateCategoryDto): Promise<Category> {
+	async create(dto: CreateCategoryDTO): Promise<Category> {
 		this.logger.debug(`Creating category: ${dto.name}`)
 		try {
 			return await this.categoryRepository.create(dto)
@@ -51,7 +51,7 @@ export class CategoryService {
 		}
 	}
 
-	async update(id: string, dto: UpdateCategoryDto): Promise<Category> {
+	async update(id: string, dto: UpdateCategoryDTO): Promise<Category> {
 		this.logger.debug(`Updating category with id: ${id}`)
 		try {
 			await this.findById(id)

@@ -14,9 +14,9 @@ model BudgetPeriod {
   id        String    @id @default(uuid())
   year      Int
   month     Int
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   expenses       Expense[]
   incomes        Income[]
@@ -30,9 +30,9 @@ model Category {
   id               String    @id @default(uuid())
   name             String
   hasBudgetEnvelope Boolean  @default(false) @map("has_budget_envelope")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  deletedAt        DateTime? @map("deleted_at")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   expenses          Expense[]
   recurringExpenses RecurringExpense[]
@@ -45,9 +45,9 @@ model PaymentType {
   id           String    @id @default(uuid())
   name         String
   hasStatement Boolean   @default(false) @map("has_statement")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   expenses          Expense[]
   recurringExpenses RecurringExpense[]
@@ -58,9 +58,9 @@ model PaymentType {
 model Bank {
   id        String    @id @default(uuid())
   name      String
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   expenses          Expense[]
   recurringExpenses RecurringExpense[]
@@ -71,9 +71,9 @@ model Bank {
 model Store {
   id        String    @id @default(uuid())
   name      String
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   expenses          Expense[]
   recurringExpenses RecurringExpense[]
@@ -88,9 +88,9 @@ model InstallmentGroup {
   totalInstallments    Int       @map("total_installments")
   paymentIntervalDays  Int       @map("payment_interval_days")
   firstPurchaseDate    DateTime  @map("first_purchase_date") @db.Date
-  createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @updatedAt @map("updated_at")
-  deletedAt            DateTime? @map("deleted_at")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt            DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   expenses Expense[]
 
@@ -107,9 +107,9 @@ model RecurringExpense {
   amount        Decimal   @db.Decimal(10, 2)
   startedAt     DateTime  @map("started_at") @db.Date
   cancelledAt   DateTime? @map("cancelled_at") @db.Date
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   category    Category    @relation(fields: [categoryId], references: [id])
   paymentType PaymentType @relation(fields: [paymentTypeId], references: [id])
@@ -135,9 +135,9 @@ model Expense {
   dueDate            DateTime? @map("due_date") @db.Date
   paidDate           DateTime? @map("paid_date") @db.Date
   amount             Decimal   @db.Decimal(10, 2)
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-  deletedAt          DateTime? @map("deleted_at")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   budgetPeriod     BudgetPeriod      @relation(fields: [budgetPeriodId], references: [id])
   category         Category          @relation(fields: [categoryId], references: [id])
@@ -155,9 +155,9 @@ model BudgetEnvelope {
   budgetPeriodId  String    @map("budget_period_id")
   categoryId      String    @map("category_id")
   allocatedAmount Decimal   @map("allocated_amount") @db.Decimal(10, 2)
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  deletedAt       DateTime? @map("deleted_at")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   budgetPeriod BudgetPeriod @relation(fields: [budgetPeriodId], references: [id])
   category     Category     @relation(fields: [categoryId], references: [id])
@@ -173,9 +173,9 @@ model Income {
   amount         Decimal   @db.Decimal(10, 2)
   isSalary       Boolean   @default(false) @map("is_salary")
   receivedDate   DateTime? @map("received_date") @db.Date
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-  deletedAt      DateTime? @map("deleted_at")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   budgetPeriod BudgetPeriod @relation(fields: [budgetPeriodId], references: [id])
 

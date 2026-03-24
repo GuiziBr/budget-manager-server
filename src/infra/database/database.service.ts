@@ -6,7 +6,10 @@ import { Pool } from "pg"
 import type { Env } from "@/infra/env"
 
 @Injectable()
-export class DatabaseService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class DatabaseService
+	extends PrismaClient
+	implements OnModuleInit, OnModuleDestroy
+{
 	constructor(configService: ConfigService<Env, true>) {
 		const connectionString = configService.get("DATABASE_URL", { infer: true })
 
