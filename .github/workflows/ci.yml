@@ -7,7 +7,7 @@ on:
     branches: [development]
 
 jobs:
-  unit-tests:
+  tests:
     name: Build & Test
     runs-on: ubuntu-latest
 
@@ -18,7 +18,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      - name: Secret Scanning
+        uses: trufflesecurity/trufflehog@v3.88.18
+        with:
+          extra_args: --only-verified
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
