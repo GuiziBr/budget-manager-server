@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common"
 import { ConfigModule } from "@nestjs/config"
 import { BankModule } from "@/domains/bank/bank.module"
+import { BudgetPeriodModule } from "@/domains/budget-period/budget-period.module"
 import { CategoryModule } from "@/domains/category/category.module"
 import { PaymentTypeModule } from "@/domains/payment-type/payment-type.module"
 import { StoreModule } from "@/domains/store/store.module"
@@ -17,7 +18,8 @@ import { InfraModule } from "@/infra/infra.module"
 		CategoryModule,
 		PaymentTypeModule,
 		BankModule,
-		StoreModule
+		StoreModule,
+		BudgetPeriodModule
 	]
 })
 export class AppModule {}
