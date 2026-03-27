@@ -1,4 +1,8 @@
-import { InternalServerErrorException, NotFoundException } from "@nestjs/common"
+import {
+	ConflictException,
+	InternalServerErrorException,
+	NotFoundException
+} from "@nestjs/common"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { Store } from "./entities/store.entity"
 import type { StoreRepository } from "./repositories/store.repository"
@@ -74,6 +78,15 @@ describe("StoreService", () => {
 			const result = await service.create(dto)
 			expect(result).toEqual(mockStore)
 			expect(mockRepository.create).toHaveBeenCalledWith(dto)
+		})
+
+		it("should propagate ConflictException when repository throws it (duplicate name)", async () => {
+			vi.mocked(mockRepository.create).mockRejectedValue(
+				new ConflictException("A store named 'Mercado Livre' already exists")
+			)
+			await expect(service.create({ name: "Mercado Livre" })).rejects.toThrow(
+				ConflictException
+			)
 		})
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {

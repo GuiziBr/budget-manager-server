@@ -46,6 +46,7 @@ export class StoreService {
 		try {
 			return await this.storeRepository.create(dto)
 		} catch (error) {
+			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to create store", error)
 			throw new InternalServerErrorException()
 		}

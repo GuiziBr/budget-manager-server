@@ -6,7 +6,6 @@ import {
 	HttpCode,
 	HttpStatus,
 	Param,
-	Patch,
 	Post
 } from "@nestjs/common"
 import { ZodValidationPipe } from "@/infra/pipes/zod-validation.pipe"
@@ -16,10 +15,6 @@ import {
 	type CreateBudgetPeriodDTO,
 	createBudgetPeriodSchema
 } from "./dtos/create-budget-period.dto"
-import {
-	type UpdateBudgetPeriodDTO,
-	updateBudgetPeriodSchema
-} from "./dtos/update-budget-period.dto"
 import type { BudgetPeriod } from "./entities/budget-period.entity"
 
 @Controller("budget-periods")
@@ -44,15 +39,6 @@ export class BudgetPeriodController {
 		dto: CreateBudgetPeriodDTO
 	): Promise<BudgetPeriod> {
 		return this.budgetPeriodService.create(dto)
-	}
-
-	@Patch(":id")
-	update(
-		@Param("id", new ZodValidationPipe(budgetPeriodParamSchema)) id: string,
-		@Body(new ZodValidationPipe(updateBudgetPeriodSchema))
-		dto: UpdateBudgetPeriodDTO
-	): Promise<BudgetPeriod> {
-		return this.budgetPeriodService.update(id, dto)
 	}
 
 	@Delete(":id")

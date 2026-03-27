@@ -1,4 +1,5 @@
-import { Injectable } from "@nestjs/common"
+import { ConflictException, Injectable } from "@nestjs/common"
+import { PrismaClientKnownRequestError } from "@prisma/client-runtime-utils"
 import type { CreateCategoryDTO } from "@/domains/category/dtos/create-category.dto"
 import type { UpdateCategoryDTO } from "@/domains/category/dtos/update-category.dto"
 import type { Category } from "@/domains/category/entities/category.entity"
@@ -20,11 +21,38 @@ export class PrismaCategoryRepository extends CategoryRepository {
 	}
 
 	async create(data: CreateCategoryDTO): Promise<Category> {
-		return this.db.category.create({ data })
+		try {
+			return await this.db.category.create({ data })
+		} catch (error) {
+			if (
+				error instanceof PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				throw new ConflictException(
+					`A category named '${data.name}' already exists`
+				)
+			}
+			throw error
+		}
 	}
 
 	async update(id: string, data: UpdateCategoryDTO): Promise<Category> {
-		return this.db.category.update({ where: { id, deletedAt: null }, data })
+		try {
+			return await this.db.category.update({
+				where: { id, deletedAt: null },
+				data
+			})
+		} catch (error) {
+			if (
+				error instanceof PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				throw new ConflictException(
+					`A category named '${data.name}' already exists`
+				)
+			}
+			throw error
+		}
 	}
 
 	async delete(id: string): Promise<void> {
