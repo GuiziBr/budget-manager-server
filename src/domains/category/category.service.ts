@@ -46,6 +46,7 @@ export class CategoryService {
 		try {
 			return await this.categoryRepository.create(dto)
 		} catch (error) {
+			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to create category", error)
 			throw new InternalServerErrorException()
 		}

@@ -1,4 +1,8 @@
-import { InternalServerErrorException, NotFoundException } from "@nestjs/common"
+import {
+	ConflictException,
+	InternalServerErrorException,
+	NotFoundException
+} from "@nestjs/common"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { PaymentType } from "./entities/payment-type.entity"
 import { PaymentTypeService } from "./payment-type.service"
@@ -75,6 +79,17 @@ describe("PaymentTypeService", () => {
 			const result = await service.create(dto)
 			expect(result).toEqual(mockPaymentType)
 			expect(mockRepository.create).toHaveBeenCalledWith(dto)
+		})
+
+		it("should propagate ConflictException when repository throws it (duplicate name)", async () => {
+			vi.mocked(mockRepository.create).mockRejectedValue(
+				new ConflictException(
+					"A payment type named 'Credit Card' already exists"
+				)
+			)
+			await expect(
+				service.create({ name: "Credit Card", hasStatement: true })
+			).rejects.toThrow(ConflictException)
 		})
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {

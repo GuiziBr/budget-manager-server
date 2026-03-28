@@ -1,4 +1,5 @@
-import { Injectable } from "@nestjs/common"
+import { ConflictException, Injectable } from "@nestjs/common"
+import { PrismaClientKnownRequestError } from "@prisma/client-runtime-utils"
 import type { CreateStoreDTO } from "@/domains/store/dtos/create-store.dto"
 import type { UpdateStoreDTO } from "@/domains/store/dtos/update-store.dto"
 import type { Store } from "@/domains/store/entities/store.entity"
@@ -20,11 +21,38 @@ export class PrismaStoreRepository extends StoreRepository {
 	}
 
 	async create(data: CreateStoreDTO): Promise<Store> {
-		return this.db.store.create({ data })
+		try {
+			return await this.db.store.create({ data })
+		} catch (error) {
+			if (
+				error instanceof PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				throw new ConflictException(
+					`A store named '${data.name}' already exists`
+				)
+			}
+			throw error
+		}
 	}
 
 	async update(id: string, data: UpdateStoreDTO): Promise<Store> {
-		return this.db.store.update({ where: { id, deletedAt: null }, data })
+		try {
+			return await this.db.store.update({
+				where: { id, deletedAt: null },
+				data
+			})
+		} catch (error) {
+			if (
+				error instanceof PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				throw new ConflictException(
+					`A store named '${data.name}' already exists`
+				)
+			}
+			throw error
+		}
 	}
 
 	async delete(id: string): Promise<void> {

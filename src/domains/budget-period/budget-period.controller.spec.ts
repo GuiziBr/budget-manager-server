@@ -16,7 +16,6 @@ const mockService: BudgetPeriodService = {
 	findAll: vi.fn(),
 	findById: vi.fn(),
 	create: vi.fn(),
-	update: vi.fn(),
 	delete: vi.fn()
 } as unknown as BudgetPeriodService
 
@@ -53,17 +52,6 @@ describe("BudgetPeriodController", () => {
 			const result = await controller.create(dto)
 			expect(result).toEqual(mockBudgetPeriod)
 			expect(mockService.create).toHaveBeenCalledWith(dto)
-		})
-	})
-
-	describe("update", () => {
-		it("should delegate to service.update with id and dto", async () => {
-			const dto = { month: 4 }
-			const updated = { ...mockBudgetPeriod, month: 4 }
-			vi.mocked(mockService.update).mockResolvedValue(updated)
-			const result = await controller.update("uuid-1", dto)
-			expect(result).toEqual(updated)
-			expect(mockService.update).toHaveBeenCalledWith("uuid-1", dto)
 		})
 	})
 

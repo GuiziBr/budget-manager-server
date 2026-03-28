@@ -1,7 +1,11 @@
 import { z } from "zod"
 
 export const createBudgetPeriodSchema = z.object({
-	year: z.number().int().min(2000),
+	year: z
+		.number()
+		.int()
+		.min(2000)
+		.max(new Date().getFullYear() + 1),
 	month: z.number().int().min(1).max(12)
 })
 

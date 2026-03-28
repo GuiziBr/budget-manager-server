@@ -46,6 +46,7 @@ export class BankService {
 		try {
 			return await this.bankRepository.create(dto)
 		} catch (error) {
+			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to create bank", error)
 			throw new InternalServerErrorException()
 		}
