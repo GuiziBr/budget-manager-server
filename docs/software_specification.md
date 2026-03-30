@@ -170,3 +170,32 @@ All models include a `deleted_at` timestamp. No records are physically deleted. 
 | `payment_interval_days` on `INSTALLMENT_GROUP` | Supports any cadence (monthly, bi-weekly, etc.); due dates are calculated, not hardcoded |
 | `% of salary` is computed | `expense.amount / SUM(incomes WHERE is_salary)` — derived at query time, always accurate |
 | No `salary` field on `BUDGET_PERIOD` | Salary is one or more `INCOME` rows with `is_salary = true`; supports multiple payroll deposits per month |
+
+---
+
+## Glossary
+
+**Budget Period**
+A single calendar month identified by `year` and `month` (e.g., March 2026). Every expense, income, and budget envelope belongs to exactly one budget period. At most one non-deleted period can exist for any given `(year, month)` pair.
+
+**Budget Envelope**
+A spending plan for a specific category within a budget period. It stores an `allocated_amount` (the cap the user sets) and derives `actual_spend` at query time from an external API. Only categories with `has_budget_envelope = true` participate. At most one non-deleted envelope can exist per `(budget_period_id, category_id)` pair.
+
+**Recurring Expense**
+A template for an expense that repeats every month (e.g., Netflix, rent, gym membership). It holds a fixed `amount`, `category`, and `payment_type`. When a new budget period is opened, the system auto-generates one `EXPENSE` row per active recurring template. Setting `cancelled_at` stops future generation; already-generated rows are untouched.
+
+**Installment Group**
+A record that represents a single purchase split across multiple payments (e.g., a $600 laptop paid over 3 months). It stores the `amount_per_installment`, `total_installments`, `payment_interval_days`, and `first_purchase_date`. The system auto-generates one `EXPENSE` row per installment, each assigned to the correct future budget period with its due date computed as `first_purchase_date + (installment_number - 1) × payment_interval_days`.
+
+**Allocated Amount vs Actual Spend**
+Two complementary figures on a budget envelope:
+- **Allocated amount** — the planned spending cap for a category in a given period; stored locally and set (or adjusted) when the period is opened.
+- **Actual spend** — the real amount spent in that category during the period; never stored — always fetched on demand from the external spend API.
+The difference (`allocated_amount − actual_spend`) gives the remaining budget for the envelope.
+
+**% of Salary**
+A derived metric that expresses an expense's amount as a percentage of the total salary income for the same period. Computed at query time as:
+```text
+expense.amount / SUM(income.amount WHERE is_salary = true AND budget_period_id = expense.budget_period_id)
+```
+It is never stored in the database.

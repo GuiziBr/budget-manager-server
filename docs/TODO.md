@@ -58,16 +58,6 @@ Document:
 
 ## Operational Gaps
 
-### Glossary
-
-Define key terms used throughout the spec so it is self-contained for a new reader:
-- Budget Period
-- Budget Envelope
-- Recurring Expense
-- Installment Group
-- Allocated Amount vs Actual Spend
-- % of Salary
-
 ### Out of Scope
 
 Explicitly state what this system does **not** do to prevent scope creep. Candidates:
