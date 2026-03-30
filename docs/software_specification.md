@@ -195,7 +195,7 @@ The difference (`allocated_amount − actual_spend`) gives the remaining budget 
 
 **% of Salary**
 A derived metric that expresses an expense's amount as a percentage of the total salary income for the same period. Computed at query time as:
-```
+```text
 expense.amount / SUM(income.amount WHERE is_salary = true AND budget_period_id = expense.budget_period_id)
 ```
 It is never stored in the database.
