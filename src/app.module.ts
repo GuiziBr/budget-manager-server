@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config"
 import { BankModule } from "@/domains/bank/bank.module"
 import { BudgetPeriodModule } from "@/domains/budget-period/budget-period.module"
 import { CategoryModule } from "@/domains/category/category.module"
+import { IncomeModule } from "@/domains/income/income.module"
 import { PaymentTypeModule } from "@/domains/payment-type/payment-type.module"
 import { StoreModule } from "@/domains/store/store.module"
 import { envSchema } from "@/infra/env"
@@ -19,7 +20,8 @@ import { InfraModule } from "@/infra/infra.module"
 		PaymentTypeModule,
 		BankModule,
 		StoreModule,
-		BudgetPeriodModule
+		BudgetPeriodModule,
+		IncomeModule
 	]
 })
 export class AppModule {}
