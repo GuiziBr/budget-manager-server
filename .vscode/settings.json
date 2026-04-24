@@ -3,7 +3,7 @@
 	"[javascript][typescript][javascriptreact][typescriptreact][json][jsonc][css][graphql]": {
 		"editor.defaultFormatter": "biomejs.biome"
 	},
-	"typescript.tsdk": "node_modules/typescript/lib",
+	"js/ts.tsdk.path": "node_modules/typescript/lib",
 	"editor.formatOnSave": true,
 	"editor.formatOnPaste": true,
 	"emmet.showExpandedAbbreviation": "never",
@@ -13,5 +13,6 @@
 	},
 	"[prisma]": {
 		"editor.defaultFormatter": "Prisma.prisma"
-	}
+	},
+	"postman.settings.dotenv-detection-notification-visibility": false
 }
