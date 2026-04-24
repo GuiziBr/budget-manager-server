@@ -1,0 +1,112 @@
+# Open Questions
+
+Undecided business rules, functional constraints, and implementation choices that need a resolution before or during the implementation of the affected domain. Items are not necessarily blockers — they can be decided at implementation time — but they should be resolved before that domain ships.
+
+---
+
+## OQ-001 — Can past income records be soft-deleted?
+
+**Context:** Soft-deleting an income from a past budget period retroactively changes the salary base for that month. Any stored or displayed *% of salary* figures derived from that period become inconsistent with what the user saw at the time.
+
+**Options:**
+- Allow soft-delete freely — consistent with all other domains; simplest to implement
+- Block deletion if the income's budget period is in a past calendar month — adds a date guard in the service
+- Block deletion if `isSalary = true` and the period is past — only protects the salary base, allows non-salary incomes to be deleted freely
+
+**Affects:** `IncomeService.delete`, possibly a helper on `BudgetPeriod` to check if a period is "in the past"
+
+---
+
+## OQ-002 — Can records in a past budget period be mutated (update/delete)?
+
+**Context:** A broader version of OQ-001. The same retroactive-change concern applies to expenses, budget envelopes, and incomes once their period's month has passed. The spec does not define a "closed" state for a period, so there is currently no guard.
+
+**Options:**
+- No restriction — any record can be updated or deleted at any time (simplest; consistent with current soft-delete approach)
+- Implicit lock — block mutations on records whose `budgetPeriod.year/month` is before the current calendar month
+- Explicit lock — add a `closedAt` timestamp to `BudgetPeriod`; mutations blocked once the period is closed by the user
+
+**Affects:** Every transactional domain service (`income`, `expense`, `budget-envelope`); potentially adds a `closedAt` column to the `budget_periods` table
+
+---
+
+## OQ-003 — Soft-delete vs cancellation on RecurringExpense — are both allowed?
+
+**Context:** The spec defines `cancelledAt` as the mechanism for stopping future generation of expense rows. It also states that all models support soft-delete. If a `RecurringExpense` is soft-deleted (rather than cancelled), it is unclear whether:
+- Future-period generation should stop (same effect as cancellation)
+- Already-generated expense rows should be affected
+- The two mechanisms should be mutually exclusive or coexist
+
+**Options:**
+- Treat soft-delete as equivalent to immediate cancellation (`cancelledAt = now()` is set automatically on delete)
+- Disallow soft-delete entirely on `RecurringExpense` — only `cancelledAt` is permitted to stop it
+- Allow both independently — soft-delete hides the template; `cancelledAt` controls generation
+
+**Affects:** `RecurringExpenseService.delete`, the budget-period opening logic
+
+---
+
+## OQ-004 — What happens to generated expense rows when an InstallmentGroup is soft-deleted?
+
+**Context:** When an `InstallmentGroup` is created, the system auto-generates one `Expense` row per installment across future periods. If the group is later soft-deleted, the already-generated rows still exist with a non-null `installmentGroupId`. The spec does not define cascade behaviour.
+
+**Options:**
+- Leave generated rows untouched — they remain as regular expenses linked to a deleted group (historical integrity)
+- Cascade soft-delete to all linked, future (unpaid) expense rows — cleaner but destructive
+- Block deletion of an `InstallmentGroup` if any linked expense rows exist
+
+**Affects:** `InstallmentGroupService.delete`, `PrismaInstallmentGroupRepository`
+
+---
+
+## OQ-005 — Can system-generated expense rows be manually edited or deleted?
+
+**Context:** Installment rows (beyond the first) and recurring-generated rows are auto-created by the system. It is unclear whether the user should be allowed to edit their `amount`, `dueDate`, `description`, etc., or soft-delete individual rows without affecting the parent group or template.
+
+**Options:**
+- Allow full edit/delete on all expense rows regardless of origin — simplest; treats all rows equally
+- Restrict editing of system-generated fields (e.g., `amount`, `dueDate`) while allowing user fields (e.g., `paidDate`, `description`)
+- Block individual deletion of installment/recurring rows — require acting on the group/template instead
+
+**Affects:** `ExpenseService.update` and `ExpenseService.delete`, potentially requires type-checking (`installmentGroupId != null`)
+
+---
+
+## OQ-006 — Should list endpoints support pagination?
+
+**Context:** The spec and existing domains use unbounded `findAll` queries. For lookup tables (Bank, Store, Category) this is acceptable. For transactional records (Expense, Income) the result set could grow large over time.
+
+**Options:**
+- No pagination — keep all list endpoints unbounded (current approach; simplest)
+- Cursor-based pagination — add `cursor` + `limit` query params; scales well but adds complexity
+- Offset-based pagination — add `page` + `limit` query params; simpler but less efficient at scale
+- Filtering only — allow filtering by `budgetPeriodId` (already done for Income) which implicitly limits result size
+
+**Affects:** All domain repositories and controllers; potentially a shared pagination DTO
+
+---
+
+## OQ-007 — What is the behaviour when the external spend API is unavailable?
+
+**Context:** `BudgetEnvelope` actual-spend and auto-allocation both depend on an external REST API. The spec does not define a fallback strategy if that API is unreachable or returns an error.
+
+**Options:**
+- Fail fast — propagate the error; the endpoint returns 502/503
+- Return null/zero — return `actualSpend: null` and let the client handle the missing value
+- Use cached value — cache the last successful API response and return it on failure (requires a caching layer)
+- Skip auto-allocation — open the period without pre-filling envelopes; user fills them manually
+
+**Affects:** `BudgetEnvelopeService`, the period-opening workflow, potentially a new `CacheModule`
+
+---
+
+## OQ-008 — Should `RecurringExpense` support being updated after creation?
+
+**Context:** The spec describes `RecurringExpense` as a template (fixed `amount`, `category`, `paymentType`). It defines `cancelledAt` for stopping generation but does not mention updating the template fields. If a subscription price changes, the user may want to update `amount` without cancelling and re-creating.
+
+**Options:**
+- Allow full updates — any field except FK references can be patched; future-generated rows use the new values
+- Allow partial updates — only non-structural fields (e.g., `description`, `amount`) can be patched
+- Disallow updates entirely — to change a recurring expense, cancel the old one and create a new one
+
+**Affects:** `RecurringExpenseService`, `UpdateRecurringExpenseDTO`
