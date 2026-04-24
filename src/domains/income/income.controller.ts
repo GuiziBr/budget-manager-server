@@ -24,7 +24,7 @@ import {
 import type { Income } from "./entities/income.entity"
 import { IncomeService } from "./income.service"
 
-const budgetPeriodIdQuerySchema = z.string().uuid().optional()
+const budgetPeriodIdQuerySchema = z.uuid().optional()
 
 @Controller("incomes")
 export class IncomeController {

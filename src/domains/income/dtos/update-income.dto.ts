@@ -6,12 +6,12 @@ export const updateIncomeSchema = z.object({
 		.number()
 		.positive()
 		.max(99_999_999.99)
-		.refine((n) => Math.round(n * 100) === n * 100, {
+		.refine((n) => /^\d+(\.\d{1,2})?$/.test(String(n)), {
 			message: "Amount must have at most 2 decimal places"
 		})
 		.optional(),
 	isSalary: z.boolean().optional(),
-	receivedDate: z.string().date().optional().nullable()
+	receivedDate: z.iso.date().optional().nullable()
 })
 
 export type UpdateIncomeDTO = z.infer<typeof updateIncomeSchema>
