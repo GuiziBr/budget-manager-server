@@ -11,6 +11,7 @@ import { StoreRepository } from "./repositories/store.repository"
 	providers: [
 		StoreService,
 		{ provide: StoreRepository, useClass: PrismaStoreRepository }
-	]
+	],
+	exports: [StoreService]
 })
 export class StoreModule {}
