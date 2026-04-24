@@ -11,6 +11,7 @@ import { BudgetPeriodRepository } from "./repositories/budget-period.repository"
 	providers: [
 		BudgetPeriodService,
 		{ provide: BudgetPeriodRepository, useClass: PrismaBudgetPeriodRepository }
-	]
+	],
+	exports: [BudgetPeriodService]
 })
 export class BudgetPeriodModule {}
