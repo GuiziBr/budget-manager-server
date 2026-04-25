@@ -10,7 +10,7 @@ export const updateRecurringExpenseSchema = z.object({
 			message: "Amount must have at most 2 decimal places"
 		})
 		.optional(),
-	cancelledAt: z.iso.date().optional().nullable()
+	cancelledAt: z.coerce.date().optional().nullable()
 })
 
 export type UpdateRecurringExpenseDTO = z.infer<typeof updateRecurringExpenseSchema>

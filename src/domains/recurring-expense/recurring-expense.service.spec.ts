@@ -95,7 +95,7 @@ describe("RecurringExpenseService", () => {
 			storeId: null,
 			description: "Netflix",
 			amount: 17.99,
-			startedAt: "2026-04-01"
+			startedAt: new Date("2026-04-01")
 		}
 
 		it("should create and return a recurring expense", async () => {
@@ -169,10 +169,9 @@ describe("RecurringExpenseService", () => {
 
 		it("should accept a valid cancelledAt (current month or later)", async () => {
 			const now = new Date()
-			const firstDayOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-			const cancelledAt = firstDayOfCurrentMonth.toISOString().split("T")[0]
+			const cancelledAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
 			const dto = { cancelledAt }
-			const updated = { ...mockRecurringExpense, cancelledAt: firstDayOfCurrentMonth }
+			const updated = { ...mockRecurringExpense, cancelledAt }
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockRecurringExpense)
 			vi.mocked(mockRepository.update).mockResolvedValue(updated)
 			const result = await service.update("uuid-1", dto)
@@ -182,7 +181,7 @@ describe("RecurringExpenseService", () => {
 		it("should throw BadRequestException when cancelledAt is in the past", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockRecurringExpense)
 			await expect(
-				service.update("uuid-1", { cancelledAt: "2020-01-01" })
+				service.update("uuid-1", { cancelledAt: new Date("2020-01-01") })
 			).rejects.toThrow(BadRequestException)
 			expect(mockRepository.update).not.toHaveBeenCalled()
 		})

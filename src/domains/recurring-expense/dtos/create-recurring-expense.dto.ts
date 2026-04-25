@@ -13,7 +13,7 @@ export const createRecurringExpenseSchema = z.object({
 		.refine((n) => /^\d+(\.\d{1,2})?$/.test(String(n)), {
 			message: "Amount must have at most 2 decimal places"
 		}),
-	startedAt: z.iso.date()
+	startedAt: z.coerce.date()
 })
 
 export type CreateRecurringExpenseDTO = z.infer<typeof createRecurringExpenseSchema>

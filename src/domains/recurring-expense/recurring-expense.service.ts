@@ -78,7 +78,7 @@ export class RecurringExpenseService {
 				const firstDayOfCurrentMonth = new Date(
 					Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
 				)
-				if (new Date(dto.cancelledAt) < firstDayOfCurrentMonth) {
+				if (dto.cancelledAt < firstDayOfCurrentMonth) {
 					throw new BadRequestException(
 						"cancelledAt must be on or after the first day of the current month"
 					)
