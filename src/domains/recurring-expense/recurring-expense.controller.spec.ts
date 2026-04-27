@@ -21,7 +21,6 @@ const mockRecurringExpense: RecurringExpense = {
 const mockService: RecurringExpenseService = {
 	findAll: vi.fn(),
 	findById: vi.fn(),
-	create: vi.fn(),
 	update: vi.fn(),
 	delete: vi.fn()
 } as unknown as RecurringExpenseService

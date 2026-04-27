@@ -147,6 +147,29 @@ describe("RecurringExpenseService", () => {
 			expect(mockRepository.create).not.toHaveBeenCalled()
 		})
 
+		it("should validate storeId when provided", async () => {
+			const dtoWithStore = { ...dto, storeId: "store-uuid-1" }
+			vi.mocked(mockCategoryService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockBankService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockStoreService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockRepository.create).mockResolvedValue(mockRecurringExpense)
+			await service.create(dtoWithStore)
+			expect(mockStoreService.findById).toHaveBeenCalledWith("store-uuid-1")
+		})
+
+		it("should throw NotFoundException when store not found", async () => {
+			const dtoWithStore = { ...dto, storeId: "store-uuid-1" }
+			vi.mocked(mockCategoryService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockBankService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockStoreService.findById).mockRejectedValue(
+				new NotFoundException("Store not found")
+			)
+			await expect(service.create(dtoWithStore)).rejects.toThrow(NotFoundException)
+			expect(mockRepository.create).not.toHaveBeenCalled()
+		})
+
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockCategoryService.findById).mockResolvedValue({} as never)
 			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue({} as never)
