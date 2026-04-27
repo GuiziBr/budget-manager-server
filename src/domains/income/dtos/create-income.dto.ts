@@ -1,15 +1,10 @@
 import { z } from "zod"
+import { monetaryAmountSchema } from "@/shared/schemas/monetary-amount.schema"
 
 export const createIncomeSchema = z.object({
 	budgetPeriodId: z.uuid(),
 	description: z.string().min(1),
-	amount: z
-		.number()
-		.positive()
-		.max(99_999_999.99)
-		.refine((n) => /^\d+(\.\d{1,2})?$/.test(String(n)), {
-			message: "Amount must have at most 2 decimal places"
-		}),
+	amount: monetaryAmountSchema,
 	isSalary: z.boolean().optional().default(false),
 	receivedDate: z.iso.date().optional().nullable()
 })
