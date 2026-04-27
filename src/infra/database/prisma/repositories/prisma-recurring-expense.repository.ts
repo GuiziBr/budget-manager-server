@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common"
+import type { RecurringExpense as PrismaRecurringExpense } from "@prisma/client"
 import type { CreateRecurringExpenseDTO } from "@/domains/recurring-expense/dtos/create-recurring-expense.dto"
 import type { UpdateRecurringExpenseDTO } from "@/domains/recurring-expense/dtos/update-recurring-expense.dto"
 import type { RecurringExpense } from "@/domains/recurring-expense/entities/recurring-expense.entity"
@@ -11,24 +12,10 @@ export class PrismaRecurringExpenseRepository extends RecurringExpenseRepository
 		super()
 	}
 
-	private mapToRecurringExpense(record: {
-		id: string
-		categoryId: string
-		paymentTypeId: string
-		bankId: string | null
-		storeId: string | null
-		description: string
-		amount: { toNumber(): number }
-		startedAt: Date
-		cancelledAt: Date | null
-		createdAt: Date
-		updatedAt: Date
-		deletedAt: Date | null
-	}): RecurringExpense {
-		return {
-			...record,
-			amount: record.amount.toNumber()
-		}
+	private mapToRecurringExpense(
+		record: PrismaRecurringExpense
+	): RecurringExpense {
+		return { ...record, amount: record.amount.toNumber() }
 	}
 
 	async findAll(): Promise<RecurringExpense[]> {
@@ -51,7 +38,10 @@ export class PrismaRecurringExpenseRepository extends RecurringExpenseRepository
 		return this.mapToRecurringExpense(record)
 	}
 
-	async update(id: string, data: UpdateRecurringExpenseDTO): Promise<RecurringExpense> {
+	async update(
+		id: string,
+		data: UpdateRecurringExpenseDTO
+	): Promise<RecurringExpense> {
 		const record = await this.db.recurringExpense.update({
 			where: { id, deletedAt: null },
 			data
