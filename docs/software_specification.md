@@ -33,9 +33,13 @@ When a user registers an installment purchase (e.g., a $600 laptop over 3 months
 ### Recurring Expenses
 A `RECURRING_EXPENSE` acts as a template for an expense that repeats every month (e.g., Netflix, gym membership, rent).
 
-- `started_at` — the month the recurring expense first appears
+- `started_at` — the month the recurring expense first appears; always set to the budget period of the expense being created
 - `cancelled_at` — when set, stops future generation; past rows are untouched
 - When a new `BudgetPeriod` is opened, one `EXPENSE` row is auto-generated per active recurring template (where `cancelled_at` is null or after the period's month)
+
+**Creation flow:** Recurring expenses are not created via a standalone endpoint. Instead, when creating an expense the caller sets `isRecurring: true` on `POST /expenses`. The backend atomically creates the `RecurringExpense` template and the first `Expense` row linked to it via `recurringExpenseId`. The `startedAt` is set to the budget period's month.
+
+**Management:** Existing recurring expenses are managed via `GET /recurring-expenses`, `GET /recurring-expenses/:id`, `PATCH /recurring-expenses/:id` (to update description, amount, or set `cancelledAt`), and `DELETE /recurring-expenses/:id`.
 
 ---
 
@@ -182,7 +186,7 @@ A single calendar month identified by `year` and `month` (e.g., March 2026). Eve
 A spending plan for a specific category within a budget period. It stores an `allocated_amount` (the cap the user sets) and derives `actual_spend` at query time from an external API. Only categories with `has_budget_envelope = true` participate. At most one non-deleted envelope can exist per `(budget_period_id, category_id)` pair.
 
 **Recurring Expense**
-A template for an expense that repeats every month (e.g., Netflix, rent, gym membership). It holds a fixed `amount`, `category`, and `payment_type`. When a new budget period is opened, the system auto-generates one `EXPENSE` row per active recurring template. Setting `cancelled_at` stops future generation; already-generated rows are untouched.
+A template for an expense that repeats every month (e.g., Netflix, rent, gym membership). It holds a fixed `amount`, `category`, and `payment_type`. Created implicitly when a user sets `isRecurring: true` on `POST /expenses` — never created directly. When a new budget period is opened, the system auto-generates one `EXPENSE` row per active recurring template. Setting `cancelled_at` stops future generation; already-generated rows are untouched.
 
 **Installment Group**
 A record that represents a single purchase split across multiple payments (e.g., a $600 laptop paid over 3 months). It stores the `amount_per_installment`, `total_installments`, `payment_interval_days`, and `first_purchase_date`. The system auto-generates one `EXPENSE` row per installment, each assigned to the correct future budget period with its due date computed as `first_purchase_date + (installment_number - 1) × payment_interval_days`.

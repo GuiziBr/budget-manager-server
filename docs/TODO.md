@@ -66,3 +66,8 @@ Explicitly state what this system does **not** do to prevent scope creep. Candid
 - Reporting or aggregation endpoints
 - Push notifications or scheduled jobs exposed via API
 - Frontend or mobile clients
+
+### Deferred Features
+
+Features intentionally not built in the current iteration but kept as candidates for future work:
+- Scheduling a recurring expense to start in a future budget period (currently `startedAt` is always set to the month of the period the expense is entered into)

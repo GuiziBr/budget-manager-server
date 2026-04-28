@@ -11,6 +11,7 @@ import { BankRepository } from "./repositories/bank.repository"
 	providers: [
 		BankService,
 		{ provide: BankRepository, useClass: PrismaBankRepository }
-	]
+	],
+	exports: [BankService]
 })
 export class BankModule {}

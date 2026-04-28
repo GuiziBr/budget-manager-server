@@ -5,6 +5,7 @@ import { BudgetPeriodModule } from "@/domains/budget-period/budget-period.module
 import { CategoryModule } from "@/domains/category/category.module"
 import { IncomeModule } from "@/domains/income/income.module"
 import { PaymentTypeModule } from "@/domains/payment-type/payment-type.module"
+import { RecurringExpenseModule } from "@/domains/recurring-expense/recurring-expense.module"
 import { StoreModule } from "@/domains/store/store.module"
 import { envSchema } from "@/infra/env"
 import { InfraModule } from "@/infra/infra.module"
@@ -21,7 +22,8 @@ import { InfraModule } from "@/infra/infra.module"
 		BankModule,
 		StoreModule,
 		BudgetPeriodModule,
-		IncomeModule
+		IncomeModule,
+		RecurringExpenseModule
 	]
 })
 export class AppModule {}

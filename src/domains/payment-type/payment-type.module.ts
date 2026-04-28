@@ -11,6 +11,7 @@ import { PaymentTypeRepository } from "./repositories/payment-type.repository"
 	providers: [
 		PaymentTypeService,
 		{ provide: PaymentTypeRepository, useClass: PrismaPaymentTypeRepository }
-	]
+	],
+	exports: [PaymentTypeService]
 })
 export class PaymentTypeModule {}

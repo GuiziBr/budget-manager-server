@@ -11,6 +11,7 @@ import { CategoryRepository } from "./repositories/category.repository"
 	providers: [
 		CategoryService,
 		{ provide: CategoryRepository, useClass: PrismaCategoryRepository }
-	]
+	],
+	exports: [CategoryService]
 })
 export class CategoryModule {}
