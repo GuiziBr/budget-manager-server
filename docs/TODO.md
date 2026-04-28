@@ -76,6 +76,44 @@ Features intentionally not built in the current iteration but kept as candidates
 
 ## Development
 
+### % of Salary on Expense
+
+Add `percentOfSalary: number | null` to the `Expense` entity as a computed field derived at query time:
+
+```
+expense.amount / SUM(income.amount WHERE is_salary = true AND budget_period_id = expense.budget_period_id) * 100
+```
+
+Implementation notes:
+- `IncomeModule` already exports `IncomeService` — inject it into `ExpenseService`
+- Compute in `findById` and in `findAll` when `budgetPeriodId` filter is provided (skip for cross-period queries to avoid N+1)
+- Return `null` when no salary incomes exist for the period
+
+---
+
+### Standardise date column naming to `*At` convention
+
+All date/timestamp columns should follow the `*At` suffix pattern already used by `createdAt`, `updatedAt`, `deletedAt`, `startedAt`, `cancelledAt`. The following columns currently deviate:
+
+| Model | Current name | Target name |
+|---|---|---|
+| `Expense` | `purchaseDate` | `purchasedAt` |
+| `Expense` | `dueDate` | `dueAt` |
+| `Expense` | `paidDate` | `paidAt` |
+| `InstallmentGroup` | `firstPurchaseDate` | `firstPurchasedAt` |
+| `Income` | `receivedDate` | `receivedAt` |
+
+Scope of change per column:
+- `prisma/schema.prisma` — rename field and update `@map` to match
+- New Prisma migration — `ALTER TABLE ... RENAME COLUMN`
+- Entity class
+- DTO schemas (Zod field names)
+- Abstract repository type definitions
+- Prisma repository `mapTo*` function
+- Service and spec references
+
+---
+
 ### Database Seed Scripts
 
 Create a Prisma seed script (`prisma/seed.ts`) to populate the database with realistic development data. Should cover all domains: lookup tables (Category, PaymentType, Bank, Store), a set of budget periods, incomes, one-time and recurring expenses, and budget envelopes.
