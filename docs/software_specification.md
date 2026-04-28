@@ -101,6 +101,14 @@ Merchants/vendors (e.g., Amazon, Loblaws). Nullable on expenses — not all purc
 
 ---
 
+## Pagination
+
+List endpoints for **lookup tables** (Bank, Store, Category, PaymentType) are unbounded — result sets are small and stable.
+
+List endpoints for **transactional records** (Expense, Income) support offset-based pagination via `page` and `limit` query parameters.
+
+---
+
 ## Soft Deletes
 
 All models include a `deleted_at` timestamp. No records are physically deleted. All queries filter `WHERE deleted_at IS NULL`. Uniqueness constraints (budget periods, budget envelopes) are enforced via partial indexes scoped to non-deleted rows.
@@ -141,6 +149,7 @@ All models include a `deleted_at` timestamp. No records are physically deleted. 
 - `cancelledAt` must be ≥ the first day of the current calendar month; past-month dates return **400**
 - Setting `cancelledAt` stops generation of new expense rows for future periods; already-generated rows are untouched; `cancelledAt` can be cleared to reactivate the template
 - **Soft-deleting** a `RecurringExpense` also sets `cancelledAt = now()` atomically, ensuring no future rows are generated; already-generated rows are untouched
+- `description`, `amount`, and `cancelledAt` can be updated freely after creation; FK references (`categoryId`, `paymentTypeId`, `bankId`, `storeId`) are immutable
 
 ### Installment Group
 

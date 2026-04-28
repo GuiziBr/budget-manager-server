@@ -1,4 +1,4 @@
-# Open Questions
+ # Open Questions
 
 Undecided business rules, functional constraints, and implementation choices that need a resolution before or during the implementation of the affected domain. Items are not necessarily blockers — they can be decided at implementation time — but they should be resolved before that domain ships.
 
@@ -54,17 +54,13 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 ---
 
-## OQ-006 — Should list endpoints support pagination?
+## OQ-006 — Should list endpoints support pagination? ✅ Resolved
 
-**Context:** The spec and existing domains use unbounded `findAll` queries. For lookup tables (Bank, Store, Category) this is acceptable. For transactional records (Expense, Income) the result set could grow large over time.
+**Decision:** Lookup tables (Bank, Store, Category, PaymentType) remain unbounded. Transactional records (Expense, Income) use offset-based pagination via `page` + `limit` query params.
 
-**Options:**
-- No pagination — keep all list endpoints unbounded (current approach; simplest)
-- Cursor-based pagination — add `cursor` + `limit` query params; scales well but adds complexity
-- Offset-based pagination — add `page` + `limit` query params; simpler but less efficient at scale
-- Filtering only — allow filtering by `budgetPeriodId` (already done for Income) which implicitly limits result size
+**Rationale:** The expense dashboard is not designed for long lists — at most dozens of records per period. Offset-based pagination is sufficient and simpler to implement.
 
-**Affects:** All domain repositories and controllers; potentially a shared pagination DTO
+**Affects:** `ExpenseController`, `IncomeController`, and their repositories when built.
 
 ---
 
@@ -82,13 +78,8 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 ---
 
-## OQ-008 — Should `RecurringExpense` support being updated after creation?
+## OQ-008 — Should `RecurringExpense` support being updated after creation? ✅ Resolved
 
-**Context:** The spec describes `RecurringExpense` as a template (fixed `amount`, `category`, `paymentType`). It defines `cancelledAt` for stopping generation but does not mention updating the template fields. If a subscription price changes, the user may want to update `amount` without cancelling and re-creating.
+**Decision:** Allow full updates — any field except FK references (`categoryId`, `paymentTypeId`, `bankId`, `storeId`) can be patched; future-generated rows use the new values.
 
-**Options:**
-- Allow full updates — any field except FK references can be patched; future-generated rows use the new values
-- Allow partial updates — only non-structural fields (e.g., `description`, `amount`) can be patched
-- Disallow updates entirely — to change a recurring expense, cancel the old one and create a new one
-
-**Affects:** `RecurringExpenseService`, `UpdateRecurringExpenseDTO`
+**Implementation:** Already in place — `UpdateRecurringExpenseDTO` exposes `description`, `amount`, and `cancelledAt`. No code changes required.
