@@ -187,6 +187,7 @@ describe("RecurringExpenseService", () => {
 			vi.mocked(mockRepository.update).mockResolvedValue(updated)
 			const result = await service.update("uuid-1", dto)
 			expect(result).toEqual(updated)
+			expect(mockRepository.findById).toHaveBeenCalledWith("uuid-1")
 			expect(mockRepository.update).toHaveBeenCalledWith("uuid-1", dto)
 		})
 
@@ -230,6 +231,7 @@ describe("RecurringExpenseService", () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockRecurringExpense)
 			vi.mocked(mockRepository.delete).mockResolvedValue(undefined)
 			await service.delete("uuid-1")
+			expect(mockRepository.findById).toHaveBeenCalledWith("uuid-1")
 			expect(mockRepository.delete).toHaveBeenCalledWith("uuid-1")
 		})
 
