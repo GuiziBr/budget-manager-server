@@ -11,8 +11,8 @@ const baseExpenseFields = {
 	budgetPeriodId: z.uuid(),
 	categoryId: z.uuid(),
 	paymentTypeId: z.uuid(),
-	bankId: z.uuid().optional(),
-	storeId: z.uuid().optional(),
+	bankId: z.uuid().optional().nullable(),
+	storeId: z.uuid().optional().nullable(),
 	description: z.string().min(1)
 }
 
