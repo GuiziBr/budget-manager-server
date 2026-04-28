@@ -71,3 +71,11 @@ Explicitly state what this system does **not** do to prevent scope creep. Candid
 
 Features intentionally not built in the current iteration but kept as candidates for future work:
 - Scheduling a recurring expense to start in a future budget period (currently `startedAt` is always set to the month of the period the expense is entered into)
+
+---
+
+## Development
+
+### Database Seed Scripts
+
+Create a Prisma seed script (`prisma/seed.ts`) to populate the database with realistic development data. Should cover all domains: lookup tables (Category, PaymentType, Bank, Store), a set of budget periods, incomes, one-time and recurring expenses, and budget envelopes.

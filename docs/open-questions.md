@@ -4,45 +4,27 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 ---
 
-## OQ-001 — Can past income records be soft-deleted?
+## OQ-001 — Can past income records be soft-deleted? ✅ Resolved
 
-**Context:** Soft-deleting an income from a past budget period retroactively changes the salary base for that month. Any stored or displayed *% of salary* figures derived from that period become inconsistent with what the user saw at the time.
+**Decision:** Block deletion if the income's budget period is in a past calendar month.
 
-**Options:**
-- Allow soft-delete freely — consistent with all other domains; simplest to implement
-- Block deletion if the income's budget period is in a past calendar month — adds a date guard in the service
-- Block deletion if `isSalary = true` and the period is past — only protects the salary base, allows non-salary incomes to be deleted freely
-
-**Affects:** `IncomeService.delete`, possibly a helper on `BudgetPeriod` to check if a period is "in the past"
+**Implementation:** `IncomeService.delete` fetches the budget period via `BudgetPeriodService.findById` and throws `UnprocessableEntityException` (422) if `period.year/month` is before the current calendar month.
 
 ---
 
-## OQ-002 — Can records in a past budget period be mutated (update/delete)?
+## OQ-002 — Can records in a past budget period be mutated (update/delete)? ✅ Resolved
 
-**Context:** A broader version of OQ-001. The same retroactive-change concern applies to expenses, budget envelopes, and incomes once their period's month has passed. The spec does not define a "closed" state for a period, so there is currently no guard.
+**Decision:** Implicit lock — block mutations on records whose `budgetPeriod.year/month` is before the current calendar month.
 
-**Options:**
-- No restriction — any record can be updated or deleted at any time (simplest; consistent with current soft-delete approach)
-- Implicit lock — block mutations on records whose `budgetPeriod.year/month` is before the current calendar month
-- Explicit lock — add a `closedAt` timestamp to `BudgetPeriod`; mutations blocked once the period is closed by the user
-
-**Affects:** Every transactional domain service (`income`, `expense`, `budget-envelope`); potentially adds a `closedAt` column to the `budget_periods` table
+**Implementation:** Each transactional domain service (`income`, `expense`, `budget-envelope`) checks the linked period's `year/month` against today in both `update` and `delete`, throwing `UnprocessableEntityException` (422) for past periods. `income` is implemented; `expense` and `budget-envelope` will apply the same guard when those services are built.
 
 ---
 
-## OQ-003 — Soft-delete vs cancellation on RecurringExpense — are both allowed?
+## OQ-003 — Soft-delete vs cancellation on RecurringExpense — are both allowed? ✅ Resolved
 
-**Context:** The spec defines `cancelledAt` as the mechanism for stopping future generation of expense rows. It also states that all models support soft-delete. If a `RecurringExpense` is soft-deleted (rather than cancelled), it is unclear whether:
-- Future-period generation should stop (same effect as cancellation)
-- Already-generated expense rows should be affected
-- The two mechanisms should be mutually exclusive or coexist
+**Decision:** Soft-delete is equivalent to immediate cancellation — `cancelledAt` is set automatically on delete. Already-generated expense rows are untouched.
 
-**Options:**
-- Treat soft-delete as equivalent to immediate cancellation (`cancelledAt = now()` is set automatically on delete)
-- Disallow soft-delete entirely on `RecurringExpense` — only `cancelledAt` is permitted to stop it
-- Allow both independently — soft-delete hides the template; `cancelledAt` controls generation
-
-**Affects:** `RecurringExpenseService.delete`, the budget-period opening logic
+**Implementation:** `PrismaRecurringExpenseRepository.delete` sets both `deletedAt` and `cancelledAt` to `now()` atomically. Cancellation via `PATCH /recurring-expenses/:id` (setting `cancelledAt`) remains the "pause" mechanism — it stops future generation without removing the template, and can be reversed by clearing `cancelledAt`.
 
 ---
 
@@ -72,17 +54,13 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 ---
 
-## OQ-006 — Should list endpoints support pagination?
+## OQ-006 — Should list endpoints support pagination? ✅ Resolved
 
-**Context:** The spec and existing domains use unbounded `findAll` queries. For lookup tables (Bank, Store, Category) this is acceptable. For transactional records (Expense, Income) the result set could grow large over time.
+**Decision:** Lookup tables (Bank, Store, Category, PaymentType) remain unbounded. Transactional records (Expense, Income) use offset-based pagination via `page` + `limit` query params.
 
-**Options:**
-- No pagination — keep all list endpoints unbounded (current approach; simplest)
-- Cursor-based pagination — add `cursor` + `limit` query params; scales well but adds complexity
-- Offset-based pagination — add `page` + `limit` query params; simpler but less efficient at scale
-- Filtering only — allow filtering by `budgetPeriodId` (already done for Income) which implicitly limits result size
+**Rationale:** The expense dashboard is not designed for long lists — at most dozens of records per period. Offset-based pagination is sufficient and simpler to implement.
 
-**Affects:** All domain repositories and controllers; potentially a shared pagination DTO
+**Affects:** `ExpenseController`, `IncomeController`, and their repositories when built.
 
 ---
 
@@ -100,13 +78,8 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 ---
 
-## OQ-008 — Should `RecurringExpense` support being updated after creation?
+## OQ-008 — Should `RecurringExpense` support being updated after creation? ✅ Resolved
 
-**Context:** The spec describes `RecurringExpense` as a template (fixed `amount`, `category`, `paymentType`). It defines `cancelledAt` for stopping generation but does not mention updating the template fields. If a subscription price changes, the user may want to update `amount` without cancelling and re-creating.
+**Decision:** Allow full updates — any field except FK references (`categoryId`, `paymentTypeId`, `bankId`, `storeId`) can be patched; future-generated rows use the new values.
 
-**Options:**
-- Allow full updates — any field except FK references can be patched; future-generated rows use the new values
-- Allow partial updates — only non-structural fields (e.g., `description`, `amount`) can be patched
-- Disallow updates entirely — to change a recurring expense, cancel the old one and create a new one
-
-**Affects:** `RecurringExpenseService`, `UpdateRecurringExpenseDTO`
+**Implementation:** Already in place — `UpdateRecurringExpenseDTO` exposes `description`, `amount`, and `cancelledAt`. No code changes required.

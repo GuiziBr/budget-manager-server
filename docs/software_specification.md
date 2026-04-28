@@ -101,6 +101,14 @@ Merchants/vendors (e.g., Amazon, Loblaws). Nullable on expenses — not all purc
 
 ---
 
+## Pagination
+
+List endpoints for **lookup tables** (Bank, Store, Category, PaymentType) are unbounded — result sets are small and stable.
+
+List endpoints for **transactional records** (Expense, Income) support offset-based pagination via `page` and `limit` query parameters.
+
+---
+
 ## Soft Deletes
 
 All models include a `deleted_at` timestamp. No records are physically deleted. All queries filter `WHERE deleted_at IS NULL`. Uniqueness constraints (budget periods, budget envelopes) are enforced via partial indexes scoped to non-deleted rows.
@@ -118,12 +126,14 @@ All models include a `deleted_at` timestamp. No records are physically deleted. 
 
 ### Budget Envelope
 
+- A budget envelope **cannot be updated or soft-deleted** if its budget period's `(year, month)` is before the current calendar month — returns **422 Unprocessable Entity**
 - Only valid for categories where `hasBudgetEnvelope = true`; creating an envelope for any other category returns **400**
 - `(budgetPeriodId, categoryId)` must be unique among non-deleted envelopes; duplicates return **409 Conflict**
 - `allocatedAmount` must be a positive value with at most 2 decimal places (max 99,999,999.99)
 
 ### Expense
 
+- An expense **cannot be updated or soft-deleted** if its budget period's `(year, month)` is before the current calendar month — returns **422 Unprocessable Entity**
 - Must always reference a **non-deleted** `BudgetPeriod`, `Category`, and `PaymentType`
 - If the referenced `PaymentType.hasStatement = true`, a `bankId` is **required**; omitting it returns **400**
 - `bankId` and `storeId` are optional; if provided, they may reference soft-deleted Bank/Store records (historical integrity is preserved)
@@ -137,7 +147,9 @@ All models include a `deleted_at` timestamp. No records are physically deleted. 
 
 - Must reference a **non-deleted** `Category` and `PaymentType` at creation time
 - `cancelledAt` must be ≥ the first day of the current calendar month; past-month dates return **400**
-- Setting `cancelledAt` stops generation of new expense rows for future periods; already-generated rows are untouched
+- Setting `cancelledAt` stops generation of new expense rows for future periods; already-generated rows are untouched; `cancelledAt` can be cleared to reactivate the template
+- **Soft-deleting** a `RecurringExpense` also sets `cancelledAt = now()` atomically, ensuring no future rows are generated; already-generated rows are untouched
+- `description`, `amount`, and `cancelledAt` can be updated freely after creation; FK references (`categoryId`, `paymentTypeId`, `bankId`, `storeId`) are immutable
 
 ### Installment Group
 
@@ -148,6 +160,7 @@ All models include a `deleted_at` timestamp. No records are physically deleted. 
 
 - Multiple incomes with `isSalary = true` per period are allowed (e.g., split payroll deposits)
 - **% of salary** is derived at query time — `expense.amount / SUM(income.amount WHERE isSalary = true)` for the same period — and is never stored
+- An income **cannot be updated or soft-deleted** if its budget period's `(year, month)` is before the current calendar month — returns **422 Unprocessable Entity**
 
 ### Lookup Tables (Category, PaymentType, Bank, Store)
 
