@@ -50,9 +50,10 @@ export class PrismaRecurringExpenseRepository extends RecurringExpenseRepository
 	}
 
 	async delete(id: string): Promise<void> {
+		const now = new Date()
 		await this.db.recurringExpense.update({
 			where: { id, deletedAt: null },
-			data: { deletedAt: new Date() }
+			data: { deletedAt: now, cancelledAt: now }
 		})
 	}
 }

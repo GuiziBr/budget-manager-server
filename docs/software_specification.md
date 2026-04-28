@@ -139,7 +139,8 @@ All models include a `deleted_at` timestamp. No records are physically deleted. 
 
 - Must reference a **non-deleted** `Category` and `PaymentType` at creation time
 - `cancelledAt` must be ≥ the first day of the current calendar month; past-month dates return **400**
-- Setting `cancelledAt` stops generation of new expense rows for future periods; already-generated rows are untouched
+- Setting `cancelledAt` stops generation of new expense rows for future periods; already-generated rows are untouched; `cancelledAt` can be cleared to reactivate the template
+- **Soft-deleting** a `RecurringExpense` also sets `cancelledAt = now()` atomically, ensuring no future rows are generated; already-generated rows are untouched
 
 ### Installment Group
 

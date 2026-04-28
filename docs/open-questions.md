@@ -20,19 +20,11 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 ---
 
-## OQ-003 — Soft-delete vs cancellation on RecurringExpense — are both allowed?
+## OQ-003 — Soft-delete vs cancellation on RecurringExpense — are both allowed? ✅ Resolved
 
-**Context:** The spec defines `cancelledAt` as the mechanism for stopping future generation of expense rows. It also states that all models support soft-delete. If a `RecurringExpense` is soft-deleted (rather than cancelled), it is unclear whether:
-- Future-period generation should stop (same effect as cancellation)
-- Already-generated expense rows should be affected
-- The two mechanisms should be mutually exclusive or coexist
+**Decision:** Soft-delete is equivalent to immediate cancellation — `cancelledAt` is set automatically on delete. Already-generated expense rows are untouched.
 
-**Options:**
-- Treat soft-delete as equivalent to immediate cancellation (`cancelledAt = now()` is set automatically on delete)
-- Disallow soft-delete entirely on `RecurringExpense` — only `cancelledAt` is permitted to stop it
-- Allow both independently — soft-delete hides the template; `cancelledAt` controls generation
-
-**Affects:** `RecurringExpenseService.delete`, the budget-period opening logic
+**Implementation:** `PrismaRecurringExpenseRepository.delete` sets both `deletedAt` and `cancelledAt` to `now()` atomically. Cancellation via `PATCH /recurring-expenses/:id` (setting `cancelledAt`) remains the "pause" mechanism — it stops future generation without removing the template, and can be reversed by clearing `cancelledAt`.
 
 ---
 
