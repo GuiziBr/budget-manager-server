@@ -333,6 +333,21 @@ describe("ExpenseService", () => {
 			expect(result.installmentNumber).toBe(2)
 		})
 
+		it("should throw BadRequestException when no due dates match existing periods", async () => {
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
+			vi.mocked(mockCategoryService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue(
+				mockPaymentTypeNoStatement as never
+			)
+			vi.mocked(mockBudgetPeriodService.findByYearAndMonth).mockResolvedValue(
+				null
+			)
+			await expect(service.create(dto)).rejects.toThrow(BadRequestException)
+			expect(mockRepository.createInstallmentExpenses).not.toHaveBeenCalled()
+		})
+
 		it("should pass purchaseDate only on first installment", async () => {
 			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
 				currentPeriod() as never
@@ -391,6 +406,73 @@ describe("ExpenseService", () => {
 			await expect(
 				service.update("missing", { description: "x" })
 			).rejects.toThrow(NotFoundException)
+		})
+
+		it("should throw NotFoundException when updated categoryId does not exist", async () => {
+			vi.mocked(mockRepository.findById).mockResolvedValue(mockExpense)
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
+			vi.mocked(mockCategoryService.findById).mockRejectedValue(
+				new NotFoundException("Category not found")
+			)
+			await expect(
+				service.update("expense-uuid-1", { categoryId: "missing-uuid" })
+			).rejects.toThrow(NotFoundException)
+			expect(mockRepository.update).not.toHaveBeenCalled()
+		})
+
+		it("should throw BadRequestException when switching to statement payment type without bankId", async () => {
+			vi.mocked(mockRepository.findById).mockResolvedValue(mockExpense) // bankId: null
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
+			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue(
+				mockPaymentTypeWithStatement as never
+			)
+			await expect(
+				service.update("expense-uuid-1", {
+					paymentTypeId: "payment-type-uuid-2"
+				})
+			).rejects.toThrow(BadRequestException)
+			expect(mockRepository.update).not.toHaveBeenCalled()
+		})
+
+		it("should allow switching to statement payment type when expense already has bankId", async () => {
+			const expenseWithBank = { ...mockExpense, bankId: "bank-uuid-1" }
+			vi.mocked(mockRepository.findById).mockResolvedValue(expenseWithBank)
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
+			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue(
+				mockPaymentTypeWithStatement as never
+			)
+			vi.mocked(mockRepository.update).mockResolvedValue(expenseWithBank)
+			await expect(
+				service.update("expense-uuid-1", {
+					paymentTypeId: "payment-type-uuid-2"
+				})
+			).resolves.toBeDefined()
+			expect(mockRepository.update).toHaveBeenCalled()
+		})
+
+		it("should throw BadRequestException when clearing bankId on a statement-backed payment type", async () => {
+			const expenseWithBank = {
+				...mockExpense,
+				paymentTypeId: "payment-type-uuid-2",
+				bankId: "bank-uuid-1"
+			}
+			vi.mocked(mockRepository.findById).mockResolvedValue(expenseWithBank)
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
+			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue(
+				mockPaymentTypeWithStatement as never
+			)
+			await expect(
+				service.update("expense-uuid-1", { bankId: null })
+			).rejects.toThrow(BadRequestException)
+			expect(mockRepository.update).not.toHaveBeenCalled()
 		})
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {

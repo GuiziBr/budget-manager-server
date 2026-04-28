@@ -140,6 +140,12 @@ export class ExpenseService {
 				})
 			}
 
+			if (expenseRows.length === 0) {
+				throw new BadRequestException(
+					"No matching budget periods found for any installment due date"
+				)
+			}
+
 			const expenses = await this.expenseRepository.createInstallmentExpenses(
 				{
 					description,
@@ -165,6 +171,27 @@ export class ExpenseService {
 		try {
 			const expense = await this.findById(id)
 			await this.assertPeriodIsNotPast(expense.budgetPeriodId, "update")
+
+			if (dto.categoryId) {
+				await this.categoryService.findById(dto.categoryId)
+			}
+
+			const paymentTypeChanged = dto.paymentTypeId !== undefined
+			const bankIdCleared = dto.bankId === null
+
+			if (paymentTypeChanged || bankIdCleared) {
+				const paymentType = paymentTypeChanged
+					? await this.paymentTypeService.findById(dto.paymentTypeId as string)
+					: await this.paymentTypeService.findById(expense.paymentTypeId)
+				const resolvedBankId =
+					dto.bankId !== undefined ? dto.bankId : expense.bankId
+				if (paymentType.hasStatement && !resolvedBankId) {
+					throw new BadRequestException(
+						"bankId is required for this payment type"
+					)
+				}
+			}
+
 			return await this.expenseRepository.update(id, dto)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
