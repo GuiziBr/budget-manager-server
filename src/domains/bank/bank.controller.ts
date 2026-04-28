@@ -11,8 +11,8 @@ import {
 } from "@nestjs/common"
 import { ZodValidationPipe } from "@/infra/pipes/zod-validation.pipe"
 import { BankService } from "./bank.service"
-import { type CreateBankDTO, createBankSchema } from "./dtos/create-bank.dto"
 import { bankParamSchema } from "./dtos/bank-param.dto"
+import { type CreateBankDTO, createBankSchema } from "./dtos/create-bank.dto"
 import { type UpdateBankDTO, updateBankSchema } from "./dtos/update-bank.dto"
 import type { Bank } from "./entities/bank.entity"
 

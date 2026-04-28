@@ -10,11 +10,20 @@ import { RecurringExpenseService } from "./recurring-expense.service"
 import { RecurringExpenseRepository } from "./repositories/recurring-expense.repository"
 
 @Module({
-	imports: [InfraModule, CategoryModule, PaymentTypeModule, BankModule, StoreModule],
+	imports: [
+		InfraModule,
+		CategoryModule,
+		PaymentTypeModule,
+		BankModule,
+		StoreModule
+	],
 	controllers: [RecurringExpenseController],
 	providers: [
 		RecurringExpenseService,
-		{ provide: RecurringExpenseRepository, useClass: PrismaRecurringExpenseRepository }
+		{
+			provide: RecurringExpenseRepository,
+			useClass: PrismaRecurringExpenseRepository
+		}
 	],
 	exports: [RecurringExpenseService]
 })

@@ -11,4 +11,6 @@ export const createRecurringExpenseSchema = z.object({
 	startedAt: z.coerce.date()
 })
 
-export type CreateRecurringExpenseDTO = z.infer<typeof createRecurringExpenseSchema>
+export type CreateRecurringExpenseDTO = z.infer<
+	typeof createRecurringExpenseSchema
+>

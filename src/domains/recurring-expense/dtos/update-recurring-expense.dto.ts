@@ -11,4 +11,6 @@ export const updateRecurringExpenseSchema = z
 		message: "At least one field must be provided"
 	})
 
-export type UpdateRecurringExpenseDTO = z.infer<typeof updateRecurringExpenseSchema>
+export type UpdateRecurringExpenseDTO = z.infer<
+	typeof updateRecurringExpenseSchema
+>

@@ -40,14 +40,18 @@ export class RecurringExpenseService {
 	async findById(id: string): Promise<RecurringExpense> {
 		this.logger.debug(`Fetching recurring expense with id: ${id}`)
 		try {
-			const recurringExpense = await this.recurringExpenseRepository.findById(id)
+			const recurringExpense =
+				await this.recurringExpenseRepository.findById(id)
 			if (!recurringExpense) {
 				throw new NotFoundException(`Recurring expense with id ${id} not found`)
 			}
 			return recurringExpense
 		} catch (error) {
 			if (error instanceof HttpException) throw error
-			this.logger.error(`Failed to fetch recurring expense with id: ${id}`, error)
+			this.logger.error(
+				`Failed to fetch recurring expense with id: ${id}`,
+				error
+			)
 			throw new InternalServerErrorException()
 		}
 	}
@@ -59,7 +63,9 @@ export class RecurringExpenseService {
 				this.categoryService.findById(dto.categoryId),
 				this.paymentTypeService.findById(dto.paymentTypeId),
 				dto.bankId ? this.bankService.findById(dto.bankId) : Promise.resolve(),
-				dto.storeId ? this.storeService.findById(dto.storeId) : Promise.resolve()
+				dto.storeId
+					? this.storeService.findById(dto.storeId)
+					: Promise.resolve()
 			])
 			return await this.recurringExpenseRepository.create(dto)
 		} catch (error) {
@@ -69,7 +75,10 @@ export class RecurringExpenseService {
 		}
 	}
 
-	async update(id: string, dto: UpdateRecurringExpenseDTO): Promise<RecurringExpense> {
+	async update(
+		id: string,
+		dto: UpdateRecurringExpenseDTO
+	): Promise<RecurringExpense> {
 		this.logger.debug(`Updating recurring expense with id: ${id}`)
 		try {
 			await this.findById(id)
@@ -87,7 +96,10 @@ export class RecurringExpenseService {
 			return await this.recurringExpenseRepository.update(id, dto)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
-			this.logger.error(`Failed to update recurring expense with id: ${id}`, error)
+			this.logger.error(
+				`Failed to update recurring expense with id: ${id}`,
+				error
+			)
 			throw new InternalServerErrorException()
 		}
 	}
@@ -99,7 +111,10 @@ export class RecurringExpenseService {
 			return await this.recurringExpenseRepository.delete(id)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
-			this.logger.error(`Failed to delete recurring expense with id: ${id}`, error)
+			this.logger.error(
+				`Failed to delete recurring expense with id: ${id}`,
+				error
+			)
 			throw new InternalServerErrorException()
 		}
 	}
