@@ -10,7 +10,15 @@ export default defineConfig({
 	test: {
 		coverage: {
 			provider: "v8",
-			exclude: ["src/infra/database/prisma/repositories/**"],
+			exclude: [
+				"src/infra/database/prisma/repositories/**",
+				"src/domains/**/repositories/**",
+				"src/shared/**",
+				"src/main.ts",
+				"src/**/*.entity.ts",
+				"src/**/*.module.ts",
+				"src/**/*.dto.ts"
+			]
 		},
 	},
 })

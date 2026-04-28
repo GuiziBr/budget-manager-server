@@ -36,7 +36,9 @@ const mockRepository: RecurringExpenseRepository = {
 }
 
 const mockCategoryService = { findById: vi.fn() } as unknown as CategoryService
-const mockPaymentTypeService = { findById: vi.fn() } as unknown as PaymentTypeService
+const mockPaymentTypeService = {
+	findById: vi.fn()
+} as unknown as PaymentTypeService
 const mockBankService = { findById: vi.fn() } as unknown as BankService
 const mockStoreService = { findById: vi.fn() } as unknown as StoreService
 
@@ -56,7 +58,9 @@ describe("RecurringExpenseService", () => {
 
 	describe("findAll", () => {
 		it("should return all recurring expenses", async () => {
-			vi.mocked(mockRepository.findAll).mockResolvedValue([mockRecurringExpense])
+			vi.mocked(mockRepository.findAll).mockResolvedValue([
+				mockRecurringExpense
+			])
 			const result = await service.findAll()
 			expect(result).toEqual([mockRecurringExpense])
 			expect(mockRepository.findAll).toHaveBeenCalledOnce()
@@ -64,7 +68,9 @@ describe("RecurringExpenseService", () => {
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findAll).mockRejectedValue(new Error("DB down"))
-			await expect(service.findAll()).rejects.toThrow(InternalServerErrorException)
+			await expect(service.findAll()).rejects.toThrow(
+				InternalServerErrorException
+			)
 		})
 	})
 
@@ -78,12 +84,16 @@ describe("RecurringExpenseService", () => {
 
 		it("should throw NotFoundException when not found", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(null)
-			await expect(service.findById("uuid-missing")).rejects.toThrow(NotFoundException)
+			await expect(service.findById("uuid-missing")).rejects.toThrow(
+				NotFoundException
+			)
 		})
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findById).mockRejectedValue(new Error("DB down"))
-			await expect(service.findById("uuid-1")).rejects.toThrow(InternalServerErrorException)
+			await expect(service.findById("uuid-1")).rejects.toThrow(
+				InternalServerErrorException
+			)
 		})
 	})
 
@@ -166,7 +176,9 @@ describe("RecurringExpenseService", () => {
 			vi.mocked(mockStoreService.findById).mockRejectedValue(
 				new NotFoundException("Store not found")
 			)
-			await expect(service.create(dtoWithStore)).rejects.toThrow(NotFoundException)
+			await expect(service.create(dtoWithStore)).rejects.toThrow(
+				NotFoundException
+			)
 			expect(mockRepository.create).not.toHaveBeenCalled()
 		})
 
@@ -175,7 +187,9 @@ describe("RecurringExpenseService", () => {
 			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue({} as never)
 			vi.mocked(mockBankService.findById).mockResolvedValue({} as never)
 			vi.mocked(mockRepository.create).mockRejectedValue(new Error("DB down"))
-			await expect(service.create(dto)).rejects.toThrow(InternalServerErrorException)
+			await expect(service.create(dto)).rejects.toThrow(
+				InternalServerErrorException
+			)
 		})
 	})
 
@@ -193,7 +207,9 @@ describe("RecurringExpenseService", () => {
 
 		it("should accept a valid cancelledAt (current month or later)", async () => {
 			const now = new Date()
-			const cancelledAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+			const cancelledAt = new Date(
+				Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+			)
 			const dto = { cancelledAt }
 			const updated = { ...mockRecurringExpense, cancelledAt }
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockRecurringExpense)
@@ -220,9 +236,9 @@ describe("RecurringExpenseService", () => {
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockRecurringExpense)
 			vi.mocked(mockRepository.update).mockRejectedValue(new Error("DB down"))
-			await expect(service.update("uuid-1", { description: "x" })).rejects.toThrow(
-				InternalServerErrorException
-			)
+			await expect(
+				service.update("uuid-1", { description: "x" })
+			).rejects.toThrow(InternalServerErrorException)
 		})
 	})
 
@@ -237,13 +253,17 @@ describe("RecurringExpenseService", () => {
 
 		it("should throw NotFoundException when not found", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(null)
-			await expect(service.delete("uuid-missing")).rejects.toThrow(NotFoundException)
+			await expect(service.delete("uuid-missing")).rejects.toThrow(
+				NotFoundException
+			)
 		})
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockRecurringExpense)
 			vi.mocked(mockRepository.delete).mockRejectedValue(new Error("DB down"))
-			await expect(service.delete("uuid-1")).rejects.toThrow(InternalServerErrorException)
+			await expect(service.delete("uuid-1")).rejects.toThrow(
+				InternalServerErrorException
+			)
 		})
 	})
 })

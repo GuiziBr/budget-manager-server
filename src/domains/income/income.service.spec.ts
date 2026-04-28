@@ -40,7 +40,9 @@ const currentPeriod = () => {
 
 const previousPeriod = () => {
 	const { year, month } = currentPeriod()
-	return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 }
+	return month === 1
+		? { year: year - 1, month: 12 }
+		: { year, month: month - 1 }
 }
 
 describe("IncomeService", () => {
@@ -139,7 +141,9 @@ describe("IncomeService", () => {
 			const dto = { description: "Updated salary", amount: 6000 }
 			const updated = { ...mockIncome, ...dto }
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockIncome)
-			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(currentPeriod() as never)
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
 			vi.mocked(mockRepository.update).mockResolvedValue(updated)
 			const result = await service.update("uuid-1", dto)
 			expect(result).toEqual(updated)
@@ -148,7 +152,9 @@ describe("IncomeService", () => {
 
 		it("should throw UnprocessableEntityException when the budget period is in a past month", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockIncome)
-			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(previousPeriod() as never)
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				previousPeriod() as never
+			)
 			await expect(
 				service.update("uuid-1", { description: "x" })
 			).rejects.toThrow(UnprocessableEntityException)
@@ -164,7 +170,9 @@ describe("IncomeService", () => {
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockIncome)
-			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(currentPeriod() as never)
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
 			vi.mocked(mockRepository.update).mockRejectedValue(new Error("DB down"))
 			await expect(
 				service.update("uuid-1", { description: "x" })
@@ -175,7 +183,9 @@ describe("IncomeService", () => {
 	describe("delete", () => {
 		it("should delete the income when the budget period is in the current month", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockIncome)
-			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(currentPeriod() as never)
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
 			vi.mocked(mockRepository.delete).mockResolvedValue(undefined)
 			await service.delete("uuid-1")
 			expect(mockRepository.delete).toHaveBeenCalledWith("uuid-1")
@@ -183,7 +193,9 @@ describe("IncomeService", () => {
 
 		it("should throw UnprocessableEntityException when the budget period is in a past month", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockIncome)
-			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(previousPeriod() as never)
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				previousPeriod() as never
+			)
 			await expect(service.delete("uuid-1")).rejects.toThrow(
 				UnprocessableEntityException
 			)
@@ -211,7 +223,9 @@ describe("IncomeService", () => {
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockIncome)
-			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(currentPeriod() as never)
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
 			vi.mocked(mockRepository.delete).mockRejectedValue(new Error("DB down"))
 			await expect(service.delete("uuid-1")).rejects.toThrow(
 				InternalServerErrorException

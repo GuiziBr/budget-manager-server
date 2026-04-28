@@ -1,31 +1,29 @@
 import { Module } from "@nestjs/common"
-import { ConfigModule } from "@nestjs/config"
 import { BankModule } from "@/domains/bank/bank.module"
 import { BudgetPeriodModule } from "@/domains/budget-period/budget-period.module"
 import { CategoryModule } from "@/domains/category/category.module"
-import { ExpenseModule } from "@/domains/expense/expense.module"
-import { IncomeModule } from "@/domains/income/income.module"
 import { PaymentTypeModule } from "@/domains/payment-type/payment-type.module"
-import { RecurringExpenseModule } from "@/domains/recurring-expense/recurring-expense.module"
 import { StoreModule } from "@/domains/store/store.module"
-import { envSchema } from "@/infra/env"
+import { PrismaExpenseRepository } from "@/infra/database/prisma/repositories/prisma-expense.repository"
 import { InfraModule } from "@/infra/infra.module"
+import { ExpenseController } from "./expense.controller"
+import { ExpenseService } from "./expense.service"
+import { ExpenseRepository } from "./repositories/expense.repository"
 
 @Module({
 	imports: [
-		ConfigModule.forRoot({
-			validate: (env) => envSchema.parse(env),
-			isGlobal: true
-		}),
 		InfraModule,
+		BudgetPeriodModule,
 		CategoryModule,
 		PaymentTypeModule,
 		BankModule,
-		StoreModule,
-		BudgetPeriodModule,
-		IncomeModule,
-		RecurringExpenseModule,
-		ExpenseModule
-	]
+		StoreModule
+	],
+	controllers: [ExpenseController],
+	providers: [
+		ExpenseService,
+		{ provide: ExpenseRepository, useClass: PrismaExpenseRepository }
+	],
+	exports: [ExpenseService]
 })
-export class AppModule {}
+export class ExpenseModule {}

@@ -12,6 +12,7 @@ import { IncomeRepository } from "./repositories/income.repository"
 	providers: [
 		IncomeService,
 		{ provide: IncomeRepository, useClass: PrismaIncomeRepository }
-	]
+	],
+	exports: [IncomeService]
 })
 export class IncomeModule {}

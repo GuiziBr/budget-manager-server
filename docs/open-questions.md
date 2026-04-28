@@ -78,6 +78,34 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 ---
 
+## OQ-009 — How should updates to installment expenses and their group be handled?
+
+**Context:** An installment purchase creates one `InstallmentGroup` record and multiple `Expense` rows spread across budget periods. The current `PATCH /expenses/:id` allows updating individual expense rows (description, amount, dates, etc.), but several questions are unresolved:
+
+**Sub-questions:**
+
+1. **Should `installmentNumber` be updatable?**
+   Changing the installment number of a row could cause duplicate numbers within the same group, or gaps. The spec doesn't mention this. Options: block it entirely, allow it with a uniqueness check, or treat it as immutable.
+
+2. **Should updating a single installment row's `amount` also update the `InstallmentGroup.amountPerInstallment`?**
+   If a user corrects the per-installment amount on row #2, the group record still holds the original value. Options: keep them independent (group is historical), cascade the update to the group and all other rows, or require going through a group-level endpoint instead.
+
+3. **Should there be a `PATCH /installment-groups/:id` endpoint?**
+   Currently `InstallmentGroup` has no standalone endpoints. If updates should propagate to all rows in the group (e.g. changing `amountPerInstallment`, `description`, or `paymentIntervalDays`), a group-level endpoint would be the natural place. This would require a full `InstallmentGroup` domain stack (service, controller, repository).
+
+4. **How should changing `paymentIntervalDays` or `firstPurchaseDate` affect already-generated rows?**
+   These fields determine due dates. Updating them retroactively would require recomputing and updating all linked expense rows' `dueDate`, potentially moving rows between budget periods — which is a significant side effect.
+
+**Options:**
+- Treat installment expense rows as immutable after creation (no updates except `paidDate` and `description`)
+- Allow individual row edits with no propagation — group and sibling rows are unaffected
+- Add a group-level update endpoint that propagates selected fields to all linked rows
+- Hybrid: allow `paidDate`/`description` on individual rows; require group endpoint for financial fields
+
+**Affects:** `ExpenseService.update`, potentially a new `InstallmentGroupService`, `InstallmentGroupController`, and `PrismaInstallmentGroupRepository`
+
+---
+
 ## OQ-008 — Should `RecurringExpense` support being updated after creation? ✅ Resolved
 
 **Decision:** Allow full updates — any field except FK references (`categoryId`, `paymentTypeId`, `bankId`, `storeId`) can be patched; future-generated rows use the new values.
