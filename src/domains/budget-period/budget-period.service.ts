@@ -63,6 +63,22 @@ export class BudgetPeriodService {
 		}
 	}
 
+	async findByYearAndMonth(
+		year: number,
+		month: number
+	): Promise<BudgetPeriod | null> {
+		this.logger.debug(`Fetching budget period for ${year}/${month}`)
+		try {
+			return await this.budgetPeriodRepository.findByYearAndMonth(year, month)
+		} catch (error) {
+			this.logger.error(
+				`Failed to fetch budget period for ${year}/${month}`,
+				error
+			)
+			throw new InternalServerErrorException()
+		}
+	}
+
 	async delete(id: string): Promise<void> {
 		this.logger.debug(`Deleting budget period with id: ${id}`)
 		try {

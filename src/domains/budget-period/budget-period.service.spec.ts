@@ -104,6 +104,32 @@ describe("BudgetPeriodService", () => {
 		})
 	})
 
+	describe("findByYearAndMonth", () => {
+		it("should return the budget period when found", async () => {
+			vi.mocked(mockRepository.findByYearAndMonth).mockResolvedValue(
+				mockBudgetPeriod
+			)
+			const result = await service.findByYearAndMonth(2026, 3)
+			expect(result).toEqual(mockBudgetPeriod)
+			expect(mockRepository.findByYearAndMonth).toHaveBeenCalledWith(2026, 3)
+		})
+
+		it("should return null when no period exists for that year/month", async () => {
+			vi.mocked(mockRepository.findByYearAndMonth).mockResolvedValue(null)
+			const result = await service.findByYearAndMonth(2026, 3)
+			expect(result).toBeNull()
+		})
+
+		it("should throw InternalServerErrorException on unexpected error", async () => {
+			vi.mocked(mockRepository.findByYearAndMonth).mockRejectedValue(
+				new Error("DB down")
+			)
+			await expect(service.findByYearAndMonth(2026, 3)).rejects.toThrow(
+				InternalServerErrorException
+			)
+		})
+	})
+
 	describe("delete", () => {
 		it("should delete the budget period when no linked records exist", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockBudgetPeriod)
