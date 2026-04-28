@@ -1,4 +1,4 @@
- # Open Questions
+# Open Questions
 
 Undecided business rules, functional constraints, and implementation choices that need a resolution before or during the implementation of the affected domain. Items are not necessarily blockers — they can be decided at implementation time — but they should be resolved before that domain ships.
 

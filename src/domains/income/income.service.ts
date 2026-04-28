@@ -92,9 +92,11 @@ export class IncomeService {
 	): Promise<void> {
 		const period = await this.budgetPeriodService.findById(budgetPeriodId)
 		const now = new Date()
+		const currentYear = now.getUTCFullYear()
+		const currentMonth = now.getUTCMonth() + 1
 		const isPastPeriod =
-			period.year < now.getFullYear() ||
-			(period.year === now.getFullYear() && period.month < now.getMonth() + 1)
+			period.year < currentYear ||
+			(period.year === currentYear && period.month < currentMonth)
 		if (isPastPeriod) {
 			throw new UnprocessableEntityException(
 				`Cannot ${action} an income from a past budget period`
