@@ -118,12 +118,14 @@ All models include a `deleted_at` timestamp. No records are physically deleted. 
 
 ### Budget Envelope
 
+- A budget envelope **cannot be updated or soft-deleted** if its budget period's `(year, month)` is before the current calendar month — returns **422 Unprocessable Entity**
 - Only valid for categories where `hasBudgetEnvelope = true`; creating an envelope for any other category returns **400**
 - `(budgetPeriodId, categoryId)` must be unique among non-deleted envelopes; duplicates return **409 Conflict**
 - `allocatedAmount` must be a positive value with at most 2 decimal places (max 99,999,999.99)
 
 ### Expense
 
+- An expense **cannot be updated or soft-deleted** if its budget period's `(year, month)` is before the current calendar month — returns **422 Unprocessable Entity**
 - Must always reference a **non-deleted** `BudgetPeriod`, `Category`, and `PaymentType`
 - If the referenced `PaymentType.hasStatement = true`, a `bankId` is **required**; omitting it returns **400**
 - `bankId` and `storeId` are optional; if provided, they may reference soft-deleted Bank/Store records (historical integrity is preserved)
@@ -148,6 +150,7 @@ All models include a `deleted_at` timestamp. No records are physically deleted. 
 
 - Multiple incomes with `isSalary = true` per period are allowed (e.g., split payroll deposits)
 - **% of salary** is derived at query time — `expense.amount / SUM(income.amount WHERE isSalary = true)` for the same period — and is never stored
+- An income **cannot be updated or soft-deleted** if its budget period's `(year, month)` is before the current calendar month — returns **422 Unprocessable Entity**
 
 ### Lookup Tables (Category, PaymentType, Bank, Store)
 

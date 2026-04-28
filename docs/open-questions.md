@@ -4,29 +4,19 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 ---
 
-## OQ-001 — Can past income records be soft-deleted?
+## OQ-001 — Can past income records be soft-deleted? ✅ Resolved
 
-**Context:** Soft-deleting an income from a past budget period retroactively changes the salary base for that month. Any stored or displayed *% of salary* figures derived from that period become inconsistent with what the user saw at the time.
+**Decision:** Block deletion if the income's budget period is in a past calendar month.
 
-**Options:**
-- Allow soft-delete freely — consistent with all other domains; simplest to implement
-- Block deletion if the income's budget period is in a past calendar month — adds a date guard in the service
-- Block deletion if `isSalary = true` and the period is past — only protects the salary base, allows non-salary incomes to be deleted freely
-
-**Affects:** `IncomeService.delete`, possibly a helper on `BudgetPeriod` to check if a period is "in the past"
+**Implementation:** `IncomeService.delete` fetches the budget period via `BudgetPeriodService.findById` and throws `UnprocessableEntityException` (422) if `period.year/month` is before the current calendar month.
 
 ---
 
-## OQ-002 — Can records in a past budget period be mutated (update/delete)?
+## OQ-002 — Can records in a past budget period be mutated (update/delete)? ✅ Resolved
 
-**Context:** A broader version of OQ-001. The same retroactive-change concern applies to expenses, budget envelopes, and incomes once their period's month has passed. The spec does not define a "closed" state for a period, so there is currently no guard.
+**Decision:** Implicit lock — block mutations on records whose `budgetPeriod.year/month` is before the current calendar month.
 
-**Options:**
-- No restriction — any record can be updated or deleted at any time (simplest; consistent with current soft-delete approach)
-- Implicit lock — block mutations on records whose `budgetPeriod.year/month` is before the current calendar month
-- Explicit lock — add a `closedAt` timestamp to `BudgetPeriod`; mutations blocked once the period is closed by the user
-
-**Affects:** Every transactional domain service (`income`, `expense`, `budget-envelope`); potentially adds a `closedAt` column to the `budget_periods` table
+**Implementation:** Each transactional domain service (`income`, `expense`, `budget-envelope`) checks the linked period's `year/month` against today in both `update` and `delete`, throwing `UnprocessableEntityException` (422) for past periods. `income` is implemented; `expense` and `budget-envelope` will apply the same guard when those services are built.
 
 ---
 
