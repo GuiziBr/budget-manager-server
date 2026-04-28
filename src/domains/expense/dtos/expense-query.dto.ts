@@ -9,5 +9,8 @@ export const expenseLimitQuerySchema = z.coerce
 	.max(100)
 	.optional()
 
+export type ExpenseBudgetPeriodIdQueryDTO = z.infer<
+	typeof expenseBudgetPeriodIdQuerySchema
+>
 export type ExpensePageQueryDTO = z.infer<typeof expensePageQuerySchema>
 export type ExpenseLimitQueryDTO = z.infer<typeof expenseLimitQuerySchema>
