@@ -33,7 +33,7 @@ Each entry captures **what** was decided, **why**, and **what was rejected** —
 2. Insert the first `Expense` row for the current period
 3. Query all existing `BudgetPeriod` records strictly after `startedAt` (with `deletedAt: null`) and bulk-insert one `Expense` row per period, linked to the new template
 
-**Why:** Both records must succeed or both must fail — see original atomicity rationale above. The backfill is necessary because `BudgetPeriodService.openPeriod` is a one-shot event: any recurring template created after a period is already open would never get a row for that period without this step. Including the backfill inside the same transaction keeps the guarantee — either the template, the first row, and all backfill rows are written together, or none are.
+**Why:** Both records must succeed or both must fail — see original atomicity rationale above. The backfill is necessary because `BudgetPeriodService.create` is a one-shot event: any recurring template created after a period is already open would never get a row for that period without this step. Including the backfill inside the same transaction keeps the guarantee — either the template, the first row, and all backfill rows are written together, or none are.
 
 A partial unique index on `(budget_period_id, recurring_expense_id) WHERE deleted_at IS NULL AND recurring_expense_id IS NOT NULL` enforces that no period can ever have two rows for the same recurring template, regardless of how rows were created.
 
@@ -43,7 +43,7 @@ A partial unique index on `(budget_period_id, recurring_expense_id) WHERE delete
 - *Unit of Work / shared transaction context* — passing a Prisma `tx` client through the abstract repository interface would solve the problem cleanly but adds complexity (threading `tx` everywhere) that the rest of the codebase does not have and would not justify for a single use case.
 - *Dedicated sync endpoint (`POST /budget-periods/:id/sync-recurring`)* — pushes the responsibility of knowing when to sync onto the frontend, which should not be aware of this internal consistency concern.
 
-The chosen approach is a deliberate pragmatic trade-off: the expense infra layer directly writes to the `recurring_expenses` and `budget_periods` tables, which is a DDD boundary violation, but the atomicity guarantee and simplicity outweigh the purity concern for this system.
+The chosen approach is a deliberate pragmatic trade-off: `PrismaExpenseRepository` reads from the `budget_periods` table (to find periods to backfill) and `PrismaBudgetPeriodRepository.openPeriod` writes to the `recurring_expenses` table (to generate expense rows per active template) — both are DDD boundary violations, but the atomicity guarantee and simplicity outweigh the purity concern for this system.
 
 ---
 
