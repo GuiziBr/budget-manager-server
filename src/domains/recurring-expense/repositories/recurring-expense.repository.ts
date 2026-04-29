@@ -5,6 +5,10 @@ import type { RecurringExpense } from "../entities/recurring-expense.entity"
 export abstract class RecurringExpenseRepository {
 	abstract findAll(): Promise<RecurringExpense[]>
 	abstract findById(id: string): Promise<RecurringExpense | null>
+	abstract findActiveForPeriod(
+		year: number,
+		month: number
+	): Promise<RecurringExpense[]>
 	abstract create(data: CreateRecurringExpenseDTO): Promise<RecurringExpense>
 	abstract update(
 		id: string,

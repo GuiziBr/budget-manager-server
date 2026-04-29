@@ -33,6 +33,21 @@ export class PrismaRecurringExpenseRepository extends RecurringExpenseRepository
 		return this.mapToRecurringExpense(record)
 	}
 
+	async findActiveForPeriod(
+		year: number,
+		month: number
+	): Promise<RecurringExpense[]> {
+		// first day of the target month in UTC
+		const periodStart = new Date(Date.UTC(year, month - 1, 1))
+		const records = await this.db.recurringExpense.findMany({
+			where: {
+				deletedAt: null,
+				OR: [{ cancelledAt: null }, { cancelledAt: { gte: periodStart } }]
+			}
+		})
+		return records.map((r) => this.mapToRecurringExpense(r))
+	}
+
 	async create(data: CreateRecurringExpenseDTO): Promise<RecurringExpense> {
 		const record = await this.db.recurringExpense.create({ data })
 		return this.mapToRecurringExpense(record)

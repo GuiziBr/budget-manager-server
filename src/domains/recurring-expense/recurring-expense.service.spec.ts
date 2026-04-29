@@ -30,6 +30,7 @@ const mockRecurringExpense: RecurringExpense = {
 const mockRepository: RecurringExpenseRepository = {
 	findAll: vi.fn(),
 	findById: vi.fn(),
+	findActiveForPeriod: vi.fn(),
 	create: vi.fn(),
 	update: vi.fn(),
 	delete: vi.fn()
@@ -92,6 +93,32 @@ describe("RecurringExpenseService", () => {
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findById).mockRejectedValue(new Error("DB down"))
 			await expect(service.findById("uuid-1")).rejects.toThrow(
+				InternalServerErrorException
+			)
+		})
+	})
+
+	describe("findActiveForPeriod", () => {
+		it("should return active recurring expenses for the given period", async () => {
+			vi.mocked(mockRepository.findActiveForPeriod).mockResolvedValue([
+				mockRecurringExpense
+			])
+			const result = await service.findActiveForPeriod(2026, 4)
+			expect(result).toEqual([mockRecurringExpense])
+			expect(mockRepository.findActiveForPeriod).toHaveBeenCalledWith(2026, 4)
+		})
+
+		it("should return an empty array when no active recurring expenses exist", async () => {
+			vi.mocked(mockRepository.findActiveForPeriod).mockResolvedValue([])
+			const result = await service.findActiveForPeriod(2026, 4)
+			expect(result).toEqual([])
+		})
+
+		it("should throw InternalServerErrorException on unexpected error", async () => {
+			vi.mocked(mockRepository.findActiveForPeriod).mockRejectedValue(
+				new Error("DB down")
+			)
+			await expect(service.findActiveForPeriod(2026, 4)).rejects.toThrow(
 				InternalServerErrorException
 			)
 		})

@@ -20,6 +20,7 @@ const mockCategory: Category = {
 const mockRepository: CategoryRepository = {
 	findAll: vi.fn(),
 	findById: vi.fn(),
+	findAllWithBudgetEnvelope: vi.fn(),
 	create: vi.fn(),
 	update: vi.fn(),
 	delete: vi.fn()
@@ -67,6 +68,32 @@ describe("CategoryService", () => {
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findById).mockRejectedValue(new Error("DB down"))
 			await expect(service.findById("uuid-1")).rejects.toThrow(
+				InternalServerErrorException
+			)
+		})
+	})
+
+	describe("findAllWithBudgetEnvelope", () => {
+		it("should return only envelope categories", async () => {
+			vi.mocked(mockRepository.findAllWithBudgetEnvelope).mockResolvedValue([
+				mockCategory
+			])
+			const result = await service.findAllWithBudgetEnvelope()
+			expect(result).toEqual([mockCategory])
+			expect(mockRepository.findAllWithBudgetEnvelope).toHaveBeenCalledOnce()
+		})
+
+		it("should return an empty array when no envelope categories exist", async () => {
+			vi.mocked(mockRepository.findAllWithBudgetEnvelope).mockResolvedValue([])
+			const result = await service.findAllWithBudgetEnvelope()
+			expect(result).toEqual([])
+		})
+
+		it("should throw InternalServerErrorException on unexpected error", async () => {
+			vi.mocked(mockRepository.findAllWithBudgetEnvelope).mockRejectedValue(
+				new Error("DB down")
+			)
+			await expect(service.findAllWithBudgetEnvelope()).rejects.toThrow(
 				InternalServerErrorException
 			)
 		})

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common"
 import { ConfigModule } from "@nestjs/config"
 import { BankModule } from "@/domains/bank/bank.module"
+import { BudgetEnvelopeModule } from "@/domains/budget-envelope/budget-envelope.module"
 import { BudgetPeriodModule } from "@/domains/budget-period/budget-period.module"
 import { CategoryModule } from "@/domains/category/category.module"
 import { ExpenseModule } from "@/domains/expense/expense.module"
@@ -23,6 +24,7 @@ import { InfraModule } from "@/infra/infra.module"
 		BankModule,
 		StoreModule,
 		BudgetPeriodModule,
+		BudgetEnvelopeModule,
 		IncomeModule,
 		RecurringExpenseModule,
 		ExpenseModule

@@ -91,6 +91,38 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 			const row = await tx.expense.create({
 				data: { ...expenseData, recurringExpenseId: recurring.id }
 			})
+
+			// Backfill rows for budget periods that were opened before this
+			// recurring template was created (strictly after startedAt month).
+			const startedAt = recurringData.startedAt
+			const futurePeriods = await tx.budgetPeriod.findMany({
+				where: {
+					deletedAt: null,
+					OR: [
+						{ year: { gt: startedAt.getUTCFullYear() } },
+						{
+							year: startedAt.getUTCFullYear(),
+							month: { gt: startedAt.getUTCMonth() + 1 }
+						}
+					]
+				}
+			})
+
+			if (futurePeriods.length > 0) {
+				await tx.expense.createMany({
+					data: futurePeriods.map((period) => ({
+						budgetPeriodId: period.id,
+						recurringExpenseId: recurring.id,
+						categoryId: expenseData.categoryId,
+						paymentTypeId: expenseData.paymentTypeId,
+						bankId: expenseData.bankId ?? null,
+						storeId: expenseData.storeId ?? null,
+						description: expenseData.description,
+						amount: expenseData.amount
+					}))
+				})
+			}
+
 			return this.mapToExpense(row)
 		})
 	}

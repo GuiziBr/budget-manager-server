@@ -20,6 +20,12 @@ export class PrismaCategoryRepository extends CategoryRepository {
 		return this.db.category.findFirst({ where: { id, deletedAt: null } })
 	}
 
+	async findAllWithBudgetEnvelope(): Promise<Category[]> {
+		return this.db.category.findMany({
+			where: { hasBudgetEnvelope: true, deletedAt: null }
+		})
+	}
+
 	async create(data: CreateCategoryDTO): Promise<Category> {
 		try {
 			return await this.db.category.create({ data })
