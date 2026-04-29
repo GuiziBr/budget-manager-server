@@ -98,6 +98,7 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 			const futurePeriods = await tx.budgetPeriod.findMany({
 				where: {
 					deletedAt: null,
+					id: { not: expenseData.budgetPeriodId },
 					OR: [
 						{ year: { gt: startedAt.getUTCFullYear() } },
 						{
