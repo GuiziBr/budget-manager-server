@@ -17,6 +17,8 @@ services:
     command: npm run start:dev
     ports:
       - '3000:3000'
+    environment:
+      - DATABASE_URL=postgresql://admin:admin@db:5432/budget-manager?schema=public
     volumes:
       - ./:/server
       - /server/node_modules

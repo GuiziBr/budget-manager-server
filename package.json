@@ -14,6 +14,7 @@
     "lint": "npx @biomejs/biome lint --write",
     "format": "npx @biomejs/biome format --write",
     "migrate": "npx prisma migrate dev",
+    "seed": "npx prisma db seed",
     "docker:up": "docker compose up",
     "docker:build": "docker compose up --build",
     "docker:down": "docker compose down -v",
