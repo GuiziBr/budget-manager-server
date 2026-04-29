@@ -37,7 +37,12 @@ A `RECURRING_EXPENSE` acts as a template for an expense that repeats every month
 - `cancelled_at` — when set, stops future generation; past rows are untouched
 - When a new `BudgetPeriod` is opened, one `EXPENSE` row is auto-generated per active recurring template (where `cancelled_at` is null or after the period's month)
 
-**Creation flow:** Recurring expenses are not created via a standalone endpoint. Instead, when creating an expense the caller sets `isRecurring: true` on `POST /expenses`. The backend atomically creates the `RecurringExpense` template and the first `Expense` row linked to it via `recurringExpenseId`. The `startedAt` is set to the budget period's month.
+**Creation flow:** Recurring expenses are not created via a standalone endpoint. Instead, when creating an expense the caller sets `isRecurring: true` on `POST /expenses`. The backend atomically (in a single DB transaction):
+1. Creates the `RecurringExpense` template (`startedAt` set to the budget period's month)
+2. Creates the first `Expense` row linked to the template via `recurringExpenseId`
+3. Queries all existing `BudgetPeriod` rows strictly after `startedAt` and bulk-inserts one backfill `Expense` row per period, linked to the same template
+
+The backfill in step 3 is necessary because period-open is a one-shot event — any recurring template created after a period is already open would otherwise never receive an expense row for that period. A partial unique index on `(budget_period_id, recurring_expense_id) WHERE deleted_at IS NULL` prevents duplicate rows regardless of creation order.
 
 **Management:** Existing recurring expenses are managed via `GET /recurring-expenses`, `GET /recurring-expenses/:id`, `PATCH /recurring-expenses/:id` (to update description, amount, or set `cancelledAt`), and `DELETE /recurring-expenses/:id`.
 
@@ -66,7 +71,7 @@ Only categories where `has_budget_envelope = true` participate in envelope budge
 - **Allocated amount** — stored locally; set when the period is opened (user can adjust)
 - **Actual spend** — not stored; fetched from an external REST API at query time (e.g., `GET /balances?category=Groceries&month=2026-03`)
 - **Remaining** — derived: `allocated_amount − actual_spend`
-- **Auto-allocation** — when opening a new period, the system queries the external API for the last 3 months' actual spend per envelope category and pre-fills `allocated_amount` as the average
+- **Auto-allocation** — when opening a new period, `allocated_amount` is pre-filled from a local constants file (`src/shared/constants/budget-envelope-amounts.ts`) keyed by category name. Integration with an external API to derive amounts from the last 3 months' actual spend is a planned future feature.
 
 A partial unique index enforces that no two active envelopes share the same `(budget_period_id, category_id)`.
 
@@ -78,7 +83,7 @@ When a user opens a new month (e.g., April 2026), the system executes the follow
 
 1. **Generate installment rows** — Find all `INSTALLMENT_GROUP` records with installments due in the new month (based on `first_purchase_date` and `payment_interval_days`) and create the corresponding `EXPENSE` rows
 2. **Generate recurring rows** — Find all `RECURRING_EXPENSE` records where `cancelled_at` is null or after the new period's month and create one `EXPENSE` row each
-3. **Suggest budget envelopes** — For each `CATEGORY` where `has_budget_envelope = true`, query the external API for the last 3 months' actual spend, compute the average, and pre-fill `BUDGET_ENVELOPE.allocated_amount`; the user can adjust before confirming
+3. **Create budget envelopes** — For each `CATEGORY` where `has_budget_envelope = true`, create a `BUDGET_ENVELOPE` row with `allocated_amount` sourced from a local constants file (`src/shared/constants/budget-envelope-amounts.ts`); the user can adjust via `PATCH /budget-envelopes/:id` afterward. External API-based auto-allocation is a planned future feature.
 4. **Activate the period** — The period becomes active and ready for manual expense entry
 
 ---
@@ -173,6 +178,30 @@ All models include a `deleted_at` timestamp. No records are physically deleted. 
 - No records are physically deleted; all deletions set `deletedAt = now()`
 - All queries filter `WHERE deletedAt IS NULL`, except when displaying historical expense data which must still resolve soft-deleted Category, PaymentType, Bank, and Store names
 - Uniqueness constraints are scoped to non-deleted rows via partial indexes
+
+---
+
+## Planned Features
+
+### External API for Budget Envelope Auto-Allocation
+
+Currently, `allocated_amount` on each `BUDGET_ENVELOPE` is pre-filled from a local constants file (`src/shared/constants/budget-envelope-amounts.ts`) when a new period is opened.
+
+The planned implementation will replace this with a call to an external spend API:
+- For each category where `has_budget_envelope = true`, query the API for the last 3 months' actual spend
+- Compute the average and use it as the pre-filled `allocated_amount`
+- The user can still adjust any envelope via `PATCH /budget-envelopes/:id` after the period is opened
+
+The local constants file will be removed once the external API is integrated.
+
+### Recurring Expense Future Start Date
+
+Currently `startedAt` on a `RECURRING_EXPENSE` is always set to the month of the budget period the expense is entered into — a recurring expense starts immediately.
+
+The planned implementation will allow the user to schedule a recurring expense to begin in a future budget period:
+- `startedAt` would accept any month on or after the current period
+- The system would skip generating expense rows for periods before `startedAt`
+- No schema changes required; only the generation logic and DTO validation need updating
 
 ---
 

@@ -4,6 +4,10 @@ import {
 	NotFoundException
 } from "@nestjs/common"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { CategoryService } from "@/domains/category/category.service"
+import type { Category } from "@/domains/category/entities/category.entity"
+import type { RecurringExpense } from "@/domains/recurring-expense/entities/recurring-expense.entity"
+import type { RecurringExpenseService } from "@/domains/recurring-expense/recurring-expense.service"
 import { BudgetPeriodService } from "./budget-period.service"
 import type { BudgetPeriod } from "./entities/budget-period.entity"
 import type { BudgetPeriodRepository } from "./repositories/budget-period.repository"
@@ -17,21 +21,57 @@ const mockBudgetPeriod: BudgetPeriod = {
 	deletedAt: null
 }
 
+const mockRecurringExpense: RecurringExpense = {
+	id: "re-uuid",
+	categoryId: "cat-uuid",
+	paymentTypeId: "pt-uuid",
+	bankId: null,
+	storeId: null,
+	description: "Netflix",
+	amount: 15.99,
+	startedAt: new Date(),
+	cancelledAt: null,
+	createdAt: new Date(),
+	updatedAt: new Date(),
+	deletedAt: null
+}
+
+const mockEnvelopeCategory: Category = {
+	id: "cat-uuid",
+	name: "Grocery",
+	hasBudgetEnvelope: true,
+	createdAt: new Date(),
+	updatedAt: new Date(),
+	deletedAt: null
+}
+
 const mockRepository: BudgetPeriodRepository = {
 	findAll: vi.fn(),
 	findById: vi.fn(),
 	findByYearAndMonth: vi.fn(),
 	hasLinkedRecords: vi.fn(),
-	create: vi.fn(),
+	openPeriod: vi.fn(),
 	delete: vi.fn()
 }
+
+const mockRecurringExpenseService: RecurringExpenseService = {
+	findActiveForPeriod: vi.fn()
+} as unknown as RecurringExpenseService
+
+const mockCategoryService: CategoryService = {
+	findAllWithBudgetEnvelope: vi.fn()
+} as unknown as CategoryService
 
 describe("BudgetPeriodService", () => {
 	let service: BudgetPeriodService
 
 	beforeEach(() => {
 		vi.clearAllMocks()
-		service = new BudgetPeriodService(mockRepository)
+		service = new BudgetPeriodService(
+			mockRepository,
+			mockRecurringExpenseService,
+			mockCategoryService
+		)
 	})
 
 	describe("findAll", () => {
@@ -74,14 +114,71 @@ describe("BudgetPeriodService", () => {
 	})
 
 	describe("create", () => {
-		it("should create and return a budget period when no duplicate exists", async () => {
+		it("should open a budget period gathering recurring and envelope data", async () => {
 			const dto = { year: 2026, month: 3 }
 			vi.mocked(mockRepository.findByYearAndMonth).mockResolvedValue(null)
-			vi.mocked(mockRepository.create).mockResolvedValue(mockBudgetPeriod)
+			vi.mocked(
+				mockRecurringExpenseService.findActiveForPeriod
+			).mockResolvedValue([mockRecurringExpense])
+			vi.mocked(
+				mockCategoryService.findAllWithBudgetEnvelope
+			).mockResolvedValue([mockEnvelopeCategory])
+			vi.mocked(mockRepository.openPeriod).mockResolvedValue(mockBudgetPeriod)
+
 			const result = await service.create(dto)
+
 			expect(result).toEqual(mockBudgetPeriod)
 			expect(mockRepository.findByYearAndMonth).toHaveBeenCalledWith(2026, 3)
-			expect(mockRepository.create).toHaveBeenCalledWith(dto)
+			expect(
+				mockRecurringExpenseService.findActiveForPeriod
+			).toHaveBeenCalledWith(2026, 3)
+			expect(
+				mockCategoryService.findAllWithBudgetEnvelope
+			).toHaveBeenCalledOnce()
+			expect(mockRepository.openPeriod).toHaveBeenCalledWith(
+				dto,
+				[
+					{
+						recurringExpenseId: mockRecurringExpense.id,
+						categoryId: mockRecurringExpense.categoryId,
+						paymentTypeId: mockRecurringExpense.paymentTypeId,
+						bankId: mockRecurringExpense.bankId,
+						storeId: mockRecurringExpense.storeId,
+						description: mockRecurringExpense.description,
+						amount: mockRecurringExpense.amount
+					}
+				],
+				[
+					{
+						categoryId: mockEnvelopeCategory.id,
+						allocatedAmount: expect.any(Number)
+					}
+				]
+			)
+		})
+
+		it("should use 0 as allocatedAmount for categories not in the constants file", async () => {
+			const dto = { year: 2026, month: 3 }
+			const unknownCategory: Category = {
+				...mockEnvelopeCategory,
+				name: "Unknown Category"
+			}
+			vi.mocked(mockRepository.findByYearAndMonth).mockResolvedValue(null)
+			vi.mocked(
+				mockRecurringExpenseService.findActiveForPeriod
+			).mockResolvedValue([])
+			vi.mocked(
+				mockCategoryService.findAllWithBudgetEnvelope
+			).mockResolvedValue([unknownCategory])
+			vi.mocked(mockRepository.openPeriod).mockResolvedValue(mockBudgetPeriod)
+
+			await service.create(dto)
+
+			expect(mockRepository.openPeriod).toHaveBeenCalledWith(
+				dto,
+				[],
+				[{ categoryId: unknownCategory.id, allocatedAmount: 0 }]
+			)
 		})
 
 		it("should throw ConflictException when a period for the same year/month already exists", async () => {
@@ -91,7 +188,21 @@ describe("BudgetPeriodService", () => {
 			await expect(service.create({ year: 2026, month: 3 })).rejects.toThrow(
 				ConflictException
 			)
-			expect(mockRepository.create).not.toHaveBeenCalled()
+			expect(mockRepository.openPeriod).not.toHaveBeenCalled()
+		})
+
+		it("should throw InternalServerErrorException when recurring expense service fails", async () => {
+			vi.mocked(mockRepository.findByYearAndMonth).mockResolvedValue(null)
+			vi.mocked(
+				mockRecurringExpenseService.findActiveForPeriod
+			).mockRejectedValue(new Error("Service down"))
+			vi.mocked(
+				mockCategoryService.findAllWithBudgetEnvelope
+			).mockResolvedValue([])
+			await expect(service.create({ year: 2026, month: 3 })).rejects.toThrow(
+				InternalServerErrorException
+			)
+			expect(mockRepository.openPeriod).not.toHaveBeenCalled()
 		})
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {

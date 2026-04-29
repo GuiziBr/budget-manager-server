@@ -56,6 +56,27 @@ export class RecurringExpenseService {
 		}
 	}
 
+	async findActiveForPeriod(
+		year: number,
+		month: number
+	): Promise<RecurringExpense[]> {
+		this.logger.debug(
+			`Fetching active recurring expenses for period ${year}/${month}`
+		)
+		try {
+			return await this.recurringExpenseRepository.findActiveForPeriod(
+				year,
+				month
+			)
+		} catch (error) {
+			this.logger.error(
+				`Failed to fetch recurring expenses for period ${year}/${month}`,
+				error
+			)
+			throw new InternalServerErrorException()
+		}
+	}
+
 	async create(dto: CreateRecurringExpenseDTO): Promise<RecurringExpense> {
 		this.logger.debug("Creating recurring expense")
 		try {

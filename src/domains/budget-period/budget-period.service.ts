@@ -6,6 +6,9 @@ import {
 	Logger,
 	NotFoundException
 } from "@nestjs/common"
+import { CategoryService } from "@/domains/category/category.service"
+import { RecurringExpenseService } from "@/domains/recurring-expense/recurring-expense.service"
+import { BUDGET_ENVELOPE_AMOUNTS } from "@/shared/constants/budget-envelope-amounts"
 import type { CreateBudgetPeriodDTO } from "./dtos/create-budget-period.dto"
 import type { BudgetPeriod } from "./entities/budget-period.entity"
 import { BudgetPeriodRepository } from "./repositories/budget-period.repository"
@@ -15,7 +18,9 @@ export class BudgetPeriodService {
 	private readonly logger = new Logger(BudgetPeriodService.name)
 
 	constructor(
-		private readonly budgetPeriodRepository: BudgetPeriodRepository
+		private readonly budgetPeriodRepository: BudgetPeriodRepository,
+		private readonly recurringExpenseService: RecurringExpenseService,
+		private readonly categoryService: CategoryService
 	) {}
 
 	async findAll(): Promise<BudgetPeriod[]> {
@@ -44,7 +49,7 @@ export class BudgetPeriodService {
 	}
 
 	async create(dto: CreateBudgetPeriodDTO): Promise<BudgetPeriod> {
-		this.logger.debug(`Creating budget period: ${dto.year}/${dto.month}`)
+		this.logger.debug(`Opening budget period: ${dto.year}/${dto.month}`)
 		try {
 			const existing = await this.budgetPeriodRepository.findByYearAndMonth(
 				dto.year,
@@ -55,10 +60,35 @@ export class BudgetPeriodService {
 					`A budget period for ${dto.year}/${String(dto.month).padStart(2, "0")} already exists`
 				)
 			}
-			return await this.budgetPeriodRepository.create(dto)
+
+			const [recurringTemplates, envelopeCategories] = await Promise.all([
+				this.recurringExpenseService.findActiveForPeriod(dto.year, dto.month),
+				this.categoryService.findAllWithBudgetEnvelope()
+			])
+
+			const recurringRows = recurringTemplates.map((r) => ({
+				recurringExpenseId: r.id,
+				categoryId: r.categoryId,
+				paymentTypeId: r.paymentTypeId,
+				bankId: r.bankId,
+				storeId: r.storeId,
+				description: r.description,
+				amount: r.amount
+			}))
+
+			const envelopeRows = envelopeCategories.map((c) => ({
+				categoryId: c.id,
+				allocatedAmount: BUDGET_ENVELOPE_AMOUNTS[c.name] ?? 0
+			}))
+
+			return await this.budgetPeriodRepository.openPeriod(
+				dto,
+				recurringRows,
+				envelopeRows
+			)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
-			this.logger.error("Failed to create budget period", error)
+			this.logger.error("Failed to open budget period", error)
 			throw new InternalServerErrorException()
 		}
 	}

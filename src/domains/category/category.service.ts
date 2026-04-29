@@ -41,6 +41,16 @@ export class CategoryService {
 		}
 	}
 
+	async findAllWithBudgetEnvelope(): Promise<Category[]> {
+		this.logger.debug("Fetching all envelope categories")
+		try {
+			return await this.categoryRepository.findAllWithBudgetEnvelope()
+		} catch (error) {
+			this.logger.error("Failed to fetch envelope categories", error)
+			throw new InternalServerErrorException()
+		}
+	}
+
 	async create(dto: CreateCategoryDTO): Promise<Category> {
 		this.logger.debug(`Creating category: ${dto.name}`)
 		try {
