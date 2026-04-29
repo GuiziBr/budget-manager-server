@@ -106,7 +106,8 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 							month: { gt: startedAt.getUTCMonth() + 1 }
 						}
 					]
-				}
+				},
+				select: { id: true }
 			})
 
 			if (futurePeriods.length > 0) {
