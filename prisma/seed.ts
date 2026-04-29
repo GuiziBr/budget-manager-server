@@ -16,75 +16,53 @@ function loadJson<T>(filename: string): T[] {
 	return JSON.parse(readFileSync(filepath, "utf-8")) as T[]
 }
 
+async function truncateAll() {
+	await prisma.expense.deleteMany()
+	await prisma.budgetEnvelope.deleteMany()
+	await prisma.income.deleteMany()
+	await prisma.recurringExpense.deleteMany()
+	await prisma.installmentGroup.deleteMany()
+	await prisma.category.deleteMany()
+	await prisma.paymentType.deleteMany()
+	await prisma.bank.deleteMany()
+	await prisma.store.deleteMany()
+	await prisma.budgetPeriod.deleteMany()
+	console.log("  all tables cleared")
+}
+
 async function seedCategories() {
-	const rows = loadJson<{ id: string; name: string; hasBudgetEnvelope: boolean }>(
-		"categories.json"
-	)
-	let created = 0
-	for (const row of rows) {
-		const existing = await prisma.category.findFirst({
-			where: { id: row.id, deletedAt: null }
-		})
-		if (!existing) {
-			await prisma.category.create({ data: row })
-			created++
-		}
-	}
-	console.log(
-		`  categories: ${created} created, ${rows.length - created} skipped`
-	)
+	const rows = loadJson<{
+		id: string
+		name: string
+		hasBudgetEnvelope: boolean
+	}>("categories.json")
+	await prisma.category.createMany({ data: rows })
+	console.log(`  categories: ${rows.length} inserted`)
 }
 
 async function seedPaymentTypes() {
 	const rows = loadJson<{ id: string; name: string; hasStatement: boolean }>(
 		"payment-types.json"
 	)
-	let created = 0
-	for (const row of rows) {
-		const existing = await prisma.paymentType.findFirst({
-			where: { id: row.id, deletedAt: null }
-		})
-		if (!existing) {
-			await prisma.paymentType.create({ data: row })
-			created++
-		}
-	}
-	console.log(
-		`  payment_types: ${created} created, ${rows.length - created} skipped`
-	)
+	await prisma.paymentType.createMany({ data: rows })
+	console.log(`  payment_types: ${rows.length} inserted`)
 }
 
 async function seedBanks() {
 	const rows = loadJson<{ id: string; name: string }>("banks.json")
-	let created = 0
-	for (const row of rows) {
-		const existing = await prisma.bank.findFirst({
-			where: { id: row.id, deletedAt: null }
-		})
-		if (!existing) {
-			await prisma.bank.create({ data: row })
-			created++
-		}
-	}
-	console.log(`  banks: ${created} created, ${rows.length - created} skipped`)
+	await prisma.bank.createMany({ data: rows })
+	console.log(`  banks: ${rows.length} inserted`)
 }
 
 async function seedStores() {
 	const rows = loadJson<{ id: string; name: string }>("stores.json")
-	let created = 0
-	for (const row of rows) {
-		const existing = await prisma.store.findFirst({
-			where: { id: row.id, deletedAt: null }
-		})
-		if (!existing) {
-			await prisma.store.create({ data: row })
-			created++
-		}
-	}
-	console.log(`  stores: ${created} created, ${rows.length - created} skipped`)
+	await prisma.store.createMany({ data: rows })
+	console.log(`  stores: ${rows.length} inserted`)
 }
 
 async function main() {
+	console.log("Clearing all tables...")
+	await truncateAll()
 	console.log("Seeding lookup tables...")
 	await seedCategories()
 	await seedPaymentTypes()
