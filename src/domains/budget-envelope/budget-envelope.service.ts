@@ -52,10 +52,21 @@ export class BudgetEnvelopeService {
 	async create(dto: CreateBudgetEnvelopeDTO): Promise<BudgetEnvelope> {
 		this.logger.debug("Creating budget envelope")
 		try {
-			const [, category] = await Promise.all([
+			const [period, category] = await Promise.all([
 				this.budgetPeriodService.findById(dto.budgetPeriodId),
 				this.categoryService.findById(dto.categoryId)
 			])
+			const now = new Date()
+			const currentYear = now.getUTCFullYear()
+			const currentMonth = now.getUTCMonth() + 1
+			const isPastPeriod =
+				period.year < currentYear ||
+				(period.year === currentYear && period.month < currentMonth)
+			if (isPastPeriod) {
+				throw new UnprocessableEntityException(
+					"Cannot create a budget envelope for a past budget period"
+				)
+			}
 			if (!category.hasBudgetEnvelope) {
 				throw new BadRequestException(
 					`Category '${category.name}' does not support budget envelopes`

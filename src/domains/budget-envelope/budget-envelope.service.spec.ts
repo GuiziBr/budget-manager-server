@@ -150,6 +150,21 @@ describe("BudgetEnvelopeService", () => {
 			expect(mockRepository.create).toHaveBeenCalledWith(dto)
 		})
 
+		it("should throw UnprocessableEntityException when period is in the past", async () => {
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				pastBudgetPeriod
+			)
+			vi.mocked(mockCategoryService.findById).mockResolvedValue(mockCategory)
+			await expect(
+				service.create({
+					budgetPeriodId: "period-past-uuid",
+					categoryId: "category-uuid",
+					allocatedAmount: 100
+				})
+			).rejects.toThrow(UnprocessableEntityException)
+			expect(mockRepository.create).not.toHaveBeenCalled()
+		})
+
 		it("should throw BadRequestException when category does not support envelopes", async () => {
 			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
 				mockBudgetPeriod
