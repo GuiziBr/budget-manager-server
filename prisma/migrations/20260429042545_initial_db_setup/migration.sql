@@ -1,150 +1,144 @@
 -- CreateTable
 CREATE TABLE "budget_periods" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "year" INTEGER NOT NULL,
     "month" INTEGER NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
+    "deleted_at" TIMESTAMPTZ(3),
 
     CONSTRAINT "budget_periods_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "categories" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "has_budget_envelope" BOOLEAN NOT NULL DEFAULT false,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
+    "deleted_at" TIMESTAMPTZ(3),
 
     CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "payment_types" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "has_statement" BOOLEAN NOT NULL DEFAULT false,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
+    "deleted_at" TIMESTAMPTZ(3),
 
     CONSTRAINT "payment_types_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "banks" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
+    "deleted_at" TIMESTAMPTZ(3),
 
     CONSTRAINT "banks_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "stores" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
+    "deleted_at" TIMESTAMPTZ(3),
 
     CONSTRAINT "stores_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "installment_groups" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "description" TEXT NOT NULL,
     "amount_per_installment" DECIMAL(10,2) NOT NULL,
     "total_installments" INTEGER NOT NULL,
     "payment_interval_days" INTEGER NOT NULL,
     "first_purchase_date" DATE NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
+    "deleted_at" TIMESTAMPTZ(3),
 
     CONSTRAINT "installment_groups_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "recurring_expenses" (
-    "id" TEXT NOT NULL,
-    "category_id" TEXT NOT NULL,
-    "payment_type_id" TEXT NOT NULL,
-    "bank_id" TEXT,
-    "store_id" TEXT,
+    "id" UUID NOT NULL,
+    "category_id" UUID NOT NULL,
+    "payment_type_id" UUID NOT NULL,
+    "bank_id" UUID,
+    "store_id" UUID,
     "description" TEXT NOT NULL,
     "amount" DECIMAL(10,2) NOT NULL,
     "started_at" DATE NOT NULL,
     "cancelled_at" DATE,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
+    "deleted_at" TIMESTAMPTZ(3),
 
     CONSTRAINT "recurring_expenses_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "expenses" (
-    "id" TEXT NOT NULL,
-    "budget_period_id" TEXT NOT NULL,
-    "category_id" TEXT NOT NULL,
-    "payment_type_id" TEXT NOT NULL,
-    "bank_id" TEXT,
-    "store_id" TEXT,
-    "installment_group_id" TEXT,
-    "recurring_expense_id" TEXT,
+    "id" UUID NOT NULL,
+    "budget_period_id" UUID NOT NULL,
+    "category_id" UUID NOT NULL,
+    "payment_type_id" UUID NOT NULL,
+    "bank_id" UUID,
+    "store_id" UUID,
+    "installment_group_id" UUID,
+    "recurring_expense_id" UUID,
     "description" TEXT NOT NULL,
     "installment_number" INTEGER,
     "purchase_date" DATE,
     "due_date" DATE,
     "paid_date" DATE,
     "amount" DECIMAL(10,2) NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
+    "deleted_at" TIMESTAMPTZ(3),
 
     CONSTRAINT "expenses_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "budget_envelopes" (
-    "id" TEXT NOT NULL,
-    "budget_period_id" TEXT NOT NULL,
-    "category_id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
+    "budget_period_id" UUID NOT NULL,
+    "category_id" UUID NOT NULL,
     "allocated_amount" DECIMAL(10,2) NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
+    "deleted_at" TIMESTAMPTZ(3),
 
     CONSTRAINT "budget_envelopes_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "incomes" (
-    "id" TEXT NOT NULL,
-    "budget_period_id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
+    "budget_period_id" UUID NOT NULL,
     "description" TEXT NOT NULL,
     "amount" DECIMAL(10,2) NOT NULL,
     "is_salary" BOOLEAN NOT NULL DEFAULT false,
     "received_date" DATE,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
+    "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(3) NOT NULL,
+    "deleted_at" TIMESTAMPTZ(3),
 
     CONSTRAINT "incomes_pkey" PRIMARY KEY ("id")
 );
-
--- CreateIndex
-CREATE UNIQUE INDEX "budget_periods_year_month_key" ON "budget_periods"("year", "month") WHERE deleted_at IS NULL;
-
--- CreateIndex
-CREATE UNIQUE INDEX "budget_envelopes_budget_period_id_category_id_key" ON "budget_envelopes"("budget_period_id", "category_id") WHERE deleted_at IS NULL;
 
 -- AddForeignKey
 ALTER TABLE "recurring_expenses" ADD CONSTRAINT "recurring_expenses_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

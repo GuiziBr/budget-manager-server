@@ -11,7 +11,7 @@ datasource db {
 }
 
 model BudgetPeriod {
-  id        String    @id @default(uuid())
+  id        String    @id @default(uuid()) @db.Uuid
   year      Int
   month     Int
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -27,7 +27,7 @@ model BudgetPeriod {
 }
 
 model Category {
-  id               String    @id @default(uuid())
+  id               String    @id @default(uuid()) @db.Uuid
   name             String
   hasBudgetEnvelope Boolean  @default(false) @map("has_budget_envelope")
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -42,7 +42,7 @@ model Category {
 }
 
 model PaymentType {
-  id           String    @id @default(uuid())
+  id           String    @id @default(uuid()) @db.Uuid
   name         String
   hasStatement Boolean   @default(false) @map("has_statement")
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -56,7 +56,7 @@ model PaymentType {
 }
 
 model Bank {
-  id        String    @id @default(uuid())
+  id        String    @id @default(uuid()) @db.Uuid
   name      String
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -69,7 +69,7 @@ model Bank {
 }
 
 model Store {
-  id        String    @id @default(uuid())
+  id        String    @id @default(uuid()) @db.Uuid
   name      String
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -82,7 +82,7 @@ model Store {
 }
 
 model InstallmentGroup {
-  id                   String    @id @default(uuid())
+  id                   String    @id @default(uuid()) @db.Uuid
   description          String
   amountPerInstallment Decimal   @map("amount_per_installment") @db.Decimal(10, 2)
   totalInstallments    Int       @map("total_installments")
@@ -98,11 +98,11 @@ model InstallmentGroup {
 }
 
 model RecurringExpense {
-  id            String    @id @default(uuid())
-  categoryId    String    @map("category_id")
-  paymentTypeId String    @map("payment_type_id")
-  bankId        String?   @map("bank_id")
-  storeId       String?   @map("store_id")
+  id            String    @id @default(uuid()) @db.Uuid
+  categoryId    String    @map("category_id") @db.Uuid
+  paymentTypeId String    @map("payment_type_id") @db.Uuid
+  bankId        String?   @map("bank_id") @db.Uuid
+  storeId       String?   @map("store_id") @db.Uuid
   description   String
   amount        Decimal   @db.Decimal(10, 2)
   startedAt     DateTime  @map("started_at") @db.Date
@@ -121,14 +121,14 @@ model RecurringExpense {
 }
 
 model Expense {
-  id                 String    @id @default(uuid())
-  budgetPeriodId     String    @map("budget_period_id")
-  categoryId         String    @map("category_id")
-  paymentTypeId      String    @map("payment_type_id")
-  bankId             String?   @map("bank_id")
-  storeId            String?   @map("store_id")
-  installmentGroupId String?   @map("installment_group_id")
-  recurringExpenseId String?   @map("recurring_expense_id")
+  id                 String    @id @default(uuid()) @db.Uuid
+  budgetPeriodId     String    @map("budget_period_id") @db.Uuid
+  categoryId         String    @map("category_id") @db.Uuid
+  paymentTypeId      String    @map("payment_type_id") @db.Uuid
+  bankId             String?   @map("bank_id") @db.Uuid
+  storeId            String?   @map("store_id") @db.Uuid
+  installmentGroupId String?   @map("installment_group_id") @db.Uuid
+  recurringExpenseId String?   @map("recurring_expense_id") @db.Uuid
   description        String
   installmentNumber  Int?      @map("installment_number")
   purchaseDate       DateTime? @map("purchase_date") @db.Date
@@ -151,9 +151,9 @@ model Expense {
 }
 
 model BudgetEnvelope {
-  id              String    @id @default(uuid())
-  budgetPeriodId  String    @map("budget_period_id")
-  categoryId      String    @map("category_id")
+  id              String    @id @default(uuid()) @db.Uuid
+  budgetPeriodId  String    @map("budget_period_id") @db.Uuid
+  categoryId      String    @map("category_id") @db.Uuid
   allocatedAmount Decimal   @map("allocated_amount") @db.Decimal(10, 2)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -167,8 +167,8 @@ model BudgetEnvelope {
 }
 
 model Income {
-  id             String    @id @default(uuid())
-  budgetPeriodId String    @map("budget_period_id")
+  id             String    @id @default(uuid()) @db.Uuid
+  budgetPeriodId String    @map("budget_period_id") @db.Uuid
   description    String
   amount         Decimal   @db.Decimal(10, 2)
   isSalary       Boolean   @default(false) @map("is_salary")
