@@ -42,6 +42,7 @@ export class PrismaRecurringExpenseRepository extends RecurringExpenseRepository
 		const records = await this.db.recurringExpense.findMany({
 			where: {
 				deletedAt: null,
+				startedAt: { lte: periodStart },
 				OR: [{ cancelledAt: null }, { cancelledAt: { gte: periodStart } }]
 			}
 		})
