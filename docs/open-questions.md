@@ -28,29 +28,21 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 ---
 
-## OQ-004 — What happens to generated expense rows when an InstallmentGroup is soft-deleted?
+## OQ-004 — What happens to generated expense rows when an InstallmentGroup is soft-deleted? ✅ Resolved
 
-**Context:** When an `InstallmentGroup` is created, the system auto-generates one `Expense` row per installment across future periods. If the group is later soft-deleted, the already-generated rows still exist with a non-null `installmentGroupId`. The spec does not define cascade behaviour.
+**Decision:** No standalone `DELETE /installment-groups/:id` endpoint will be built. `InstallmentGroup` is a persistence detail created automatically during installment expense creation — it has no independent API surface. Expense rows linked to a group are managed exclusively through `DELETE /expenses/:id`.
 
-**Options:**
-- Leave generated rows untouched — they remain as regular expenses linked to a deleted group (historical integrity)
-- Cascade soft-delete to all linked, future (unpaid) expense rows — cleaner but destructive
-- Block deletion of an `InstallmentGroup` if any linked expense rows exist
-
-**Affects:** `InstallmentGroupService.delete`, `PrismaInstallmentGroupRepository`
+**Implementation:** No code changes required. The question of cascade behaviour is moot because the group record cannot be directly deleted via the API.
 
 ---
 
-## OQ-005 — Can system-generated expense rows be manually edited or deleted?
+## OQ-005 — Can system-generated expense rows be manually edited or deleted? ✅ Resolved
 
-**Context:** Installment rows (beyond the first) and recurring-generated rows are auto-created by the system. It is unclear whether the user should be allowed to edit their `amount`, `dueDate`, `description`, etc., or soft-delete individual rows without affecting the parent group or template.
+**Decision:** Allow full edit and delete on all expense rows regardless of origin. Individual installment and recurring rows can be soft-deleted or updated via `DELETE /expenses/:id` and `PATCH /expenses/:id` with no cascade and no special guards based on `installmentGroupId` or `recurringExpenseId`.
 
-**Options:**
-- Allow full edit/delete on all expense rows regardless of origin — simplest; treats all rows equally
-- Restrict editing of system-generated fields (e.g., `amount`, `dueDate`) while allowing user fields (e.g., `paidDate`, `description`)
-- Block individual deletion of installment/recurring rows — require acting on the group/template instead
-
-**Affects:** `ExpenseService.update` and `ExpenseService.delete`, potentially requires type-checking (`installmentGroupId != null`)
+- `installmentNumber` is excluded from `UpdateExpenseDTO` and is immutable (resolved in OQ-009)
+- Bulk amount changes across an installment group go through `PATCH /installment-groups/:id` (resolved in OQ-009)
+- No code changes required; the existing `ExpenseService.update` and `ExpenseService.delete` are already correct
 
 ---
 
@@ -78,31 +70,33 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 ---
 
-## OQ-009 — How should updates to installment expenses and their group be handled?
+## OQ-009 — How should updates to installment expenses and their group be handled? ✅ Resolved
 
 **Context:** An installment purchase creates one `InstallmentGroup` record and multiple `Expense` rows spread across budget periods. The current `PATCH /expenses/:id` allows updating individual expense rows (description, amount, dates, etc.), but several questions are unresolved:
 
 **Sub-questions:**
 
-1. **Should `installmentNumber` be updatable?**
-   Changing the installment number of a row could cause duplicate numbers within the same group, or gaps. The spec doesn't mention this. Options: block it entirely, allow it with a uniqueness check, or treat it as immutable.
+1. **Should `installmentNumber` be updatable?** ✅ Resolved
 
-2. **Should updating a single installment row's `amount` also update the `InstallmentGroup.amountPerInstallment`?**
-   If a user corrects the per-installment amount on row #2, the group record still holds the original value. Options: keep them independent (group is historical), cascade the update to the group and all other rows, or require going through a group-level endpoint instead.
+   **Decision:** `installmentNumber` is immutable — block any attempt to update it. Gaps in the sequence (e.g., #1, #3, #4 after deleting #2) are acceptable and honest: they indicate a payment was cancelled for that slot. The desire to postpone rather than cancel a payment is addressed by a separate planned feature (Installment Deferral in the software spec), which will soft-delete the row and append a new one at the end of the sequence instead.
 
-3. **Should there be a `PATCH /installment-groups/:id` endpoint?**
-   Currently `InstallmentGroup` has no standalone endpoints. If updates should propagate to all rows in the group (e.g. changing `amountPerInstallment`, `description`, or `paymentIntervalDays`), a group-level endpoint would be the natural place. This would require a full `InstallmentGroup` domain stack (service, controller, repository).
+   **Implementation:** `UpdateExpenseDTO` must not expose `installmentNumber`. No repository changes required.
 
-4. **How should changing `paymentIntervalDays` or `firstPurchaseDate` affect already-generated rows?**
-   These fields determine due dates. Updating them retroactively would require recomputing and updating all linked expense rows' `dueDate`, potentially moving rows between budget periods — which is a significant side effect.
+2. **Should updating a single installment row's `amount` also update the `InstallmentGroup.amountPerInstallment`?** ✅ Resolved
 
-**Options:**
-- Treat installment expense rows as immutable after creation (no updates except `paidDate` and `description`)
-- Allow individual row edits with no propagation — group and sibling rows are unaffected
-- Add a group-level update endpoint that propagates selected fields to all linked rows
-- Hybrid: allow `paidDate`/`description` on individual rows; require group endpoint for financial fields
+   **Decision:** Amount changes go through the group endpoint (sub-question 3), not through `PATCH /expenses/:id`. `PATCH /expenses/:id` does not cascade — it only updates the individual row for local corrections (e.g., `paidDate`, `description`).
 
-**Affects:** `ExpenseService.update`, potentially a new `InstallmentGroupService`, `InstallmentGroupController`, and `PrismaInstallmentGroupRepository`
+3. **Should there be a `PATCH /installment-groups/:id` endpoint?** ✅ Resolved
+
+   **Decision:** Yes. `PATCH /installment-groups/:id` is the only way to change `amountPerInstallment` or `totalInstallments`. On update, the new `amountPerInstallment` is propagated to all non-deleted linked expense rows whose `budgetPeriod.year/month` is **≥ the current calendar month** — past rows are left untouched. `paymentIntervalDays` and `firstPurchaseDate` are immutable (changing them would require recomputing `dueDate` on all linked rows and potentially moving rows between budget periods).
+
+   **Implementation:** Requires a full `InstallmentGroup` domain stack: `InstallmentGroupRepository` (abstract), `PrismaInstallmentGroupRepository`, `InstallmentGroupService`, `InstallmentGroupController`, `InstallmentGroupModule`. The Prisma repository update method bulk-updates linked expense rows filtered by their budget period's `year/month >= current month` in a single transaction.
+
+4. **How should changing `paymentIntervalDays` or `firstPurchaseDate` affect already-generated rows?** ✅ Resolved
+
+   **Decision:** These fields are immutable after group creation — they are not exposed in `UpdateInstallmentGroupDTO`. Recomputing `dueDate` across linked rows and potentially moving them between budget periods is out of scope.
+
+**Affects:** `InstallmentGroupService`, `InstallmentGroupController`, `InstallmentGroupRepository`, `PrismaInstallmentGroupRepository` (new domain stack); `ExpenseService.update` (no changes needed — individual row updates do not cascade)
 
 ---
 
