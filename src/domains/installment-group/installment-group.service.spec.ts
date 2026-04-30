@@ -1,5 +1,5 @@
 import { InternalServerErrorException, NotFoundException } from "@nestjs/common"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { InstallmentGroup } from "./entities/installment-group.entity"
 import { InstallmentGroupService } from "./installment-group.service"
 import type { InstallmentGroupRepository } from "./repositories/installment-group.repository"
@@ -27,6 +27,10 @@ describe("InstallmentGroupService", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		service = new InstallmentGroupService(mockRepository)
+	})
+
+	afterEach(() => {
+		vi.useRealTimers()
 	})
 
 	describe("findById", () => {
@@ -63,6 +67,7 @@ describe("InstallmentGroupService", () => {
 		})
 
 		it("should update amountPerInstallment and pass current year/month", async () => {
+			vi.setSystemTime(new Date("2026-04-15T12:00:00Z"))
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockGroup)
 			const updated = { ...mockGroup, amountPerInstallment: 250 }
 			vi.mocked(mockRepository.update).mockResolvedValue(updated)
@@ -72,12 +77,11 @@ describe("InstallmentGroupService", () => {
 			})
 
 			expect(result).toEqual(updated)
-			const now = new Date()
 			expect(mockRepository.update).toHaveBeenCalledWith(
 				"group-uuid-1",
 				{ amountPerInstallment: 250 },
-				now.getUTCFullYear(),
-				now.getUTCMonth() + 1
+				2026,
+				4
 			)
 		})
 
