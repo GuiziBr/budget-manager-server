@@ -160,6 +160,11 @@ All models include a `deleted_at` timestamp. No records are physically deleted. 
 
 - Due date per installment: `firstPurchaseDate + (installmentNumber - 1) × paymentIntervalDays`
 - `purchaseDate` is set only on the first installment row; subsequent system-generated rows leave it null
+- `amountPerInstallment` and `totalInstallments` can be updated via `PATCH /installment-groups/:id`
+- Updating `amountPerInstallment` cascades atomically to all non-deleted linked expense rows whose budget period's `(year, month)` is ≥ the current calendar month — past rows are left untouched
+- Updating `totalInstallments` applies to the group record only — no cascade to expense rows
+- `paymentIntervalDays` and `firstPurchaseDate` are immutable after creation
+- `PATCH /installment-groups/:id` is the only way to change `amountPerInstallment`; updating `amount` on an individual expense row via `PATCH /expenses/:id` does not cascade to siblings or the group
 
 ### Income
 
@@ -193,6 +198,17 @@ The planned implementation will replace this with a call to an external spend AP
 - The user can still adjust any envelope via `PATCH /budget-envelopes/:id` after the period is opened
 
 The local constants file will be removed once the external API is integrated.
+
+### Installment Deferral
+
+Currently, deleting an installment expense row cancels that payment — it is removed from the period and the total count of remaining rows decreases.
+
+The planned implementation will add a dedicated "defer" action that postpones a specific installment to a later month rather than cancelling it:
+- The existing expense row is soft-deleted from its current budget period
+- A new expense row is appended after the last existing installment in the group, inheriting the same `amount`, `categoryId`, `paymentTypeId`, and other fields, with a recalculated `dueDate` and the next available `installmentNumber`
+- The target budget period for the new row must already exist; if it does not, the operation is rejected
+- `InstallmentGroup.totalInstallments` is incremented to reflect the extended plan
+- The net effect: the total amount owed is unchanged, the payment is moved to a future month, and the sequence stays contiguous
 
 ### Recurring Expense Future Start Date
 
