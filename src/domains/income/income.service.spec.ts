@@ -15,7 +15,7 @@ const mockIncome: Income = {
 	description: "Monthly salary",
 	amount: 5000,
 	isSalary: true,
-	receivedDate: new Date("2026-04-01"),
+	receivedAt: new Date("2026-04-01"),
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	deletedAt: null
@@ -105,7 +105,7 @@ describe("IncomeService", () => {
 			description: "Monthly salary",
 			amount: 5000,
 			isSalary: true,
-			receivedDate: "2026-04-01"
+			receivedAt: "2026-04-01"
 		}
 
 		it("should create and return an income", async () => {

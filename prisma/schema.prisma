@@ -87,7 +87,7 @@ model InstallmentGroup {
   amountPerInstallment Decimal   @map("amount_per_installment") @db.Decimal(10, 2)
   totalInstallments    Int       @map("total_installments")
   paymentIntervalDays  Int       @map("payment_interval_days")
-  firstPurchaseDate    DateTime  @map("first_purchase_date") @db.Date
+  firstPurchasedAt     DateTime  @map("first_purchased_at") @db.Date
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt            DateTime? @map("deleted_at") @db.Timestamptz(3)
@@ -131,9 +131,9 @@ model Expense {
   recurringExpenseId String?   @map("recurring_expense_id") @db.Uuid
   description        String
   installmentNumber  Int?      @map("installment_number")
-  purchaseDate       DateTime? @map("purchase_date") @db.Date
-  dueDate            DateTime? @map("due_date") @db.Date
-  paidDate           DateTime? @map("paid_date") @db.Date
+  purchasedAt        DateTime? @map("purchased_at") @db.Date
+  dueAt              DateTime? @map("due_at") @db.Date
+  paidAt             DateTime? @map("paid_at") @db.Date
   amount             Decimal   @db.Decimal(10, 2)
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -172,7 +172,7 @@ model Income {
   description    String
   amount         Decimal   @db.Decimal(10, 2)
   isSalary       Boolean   @default(false) @map("is_salary")
-  receivedDate   DateTime? @map("received_date") @db.Date
+  receivedAt     DateTime? @map("received_at") @db.Date
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)

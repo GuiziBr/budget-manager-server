@@ -81,8 +81,8 @@ export class PrismaBudgetPeriodRepository extends BudgetPeriodRepository {
 				description: string
 				amount: number
 				installmentNumber: number
-				dueDate: Date
-				purchaseDate: Date | null
+				dueAt: Date
+				purchasedAt: Date | null
 			}[] = []
 
 			for (const group of installmentGroups) {
@@ -95,7 +95,7 @@ export class PrismaBudgetPeriodRepository extends BudgetPeriodRepository {
 				for (let n = 1; n <= group.totalInstallments; n++) {
 					if (existingInstallmentNumbers.has(n)) continue
 
-					const dueDate = new Date(group.firstPurchaseDate)
+					const dueDate = new Date(group.firstPurchasedAt)
 					dueDate.setUTCDate(
 						dueDate.getUTCDate() + (n - 1) * group.paymentIntervalDays
 					)
@@ -118,8 +118,8 @@ export class PrismaBudgetPeriodRepository extends BudgetPeriodRepository {
 							description: group.description,
 							amount: group.amountPerInstallment.toNumber(),
 							installmentNumber: n,
-							dueDate,
-							purchaseDate: null
+							dueAt: dueDate,
+							purchasedAt: null
 						})
 					}
 				}

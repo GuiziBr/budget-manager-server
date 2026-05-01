@@ -10,7 +10,7 @@ const mockGroup: InstallmentGroup = {
 	amountPerInstallment: 200,
 	totalInstallments: 3,
 	paymentIntervalDays: 30,
-	firstPurchaseDate: new Date("2026-04-01"),
+	firstPurchasedAt: new Date("2026-04-01"),
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	deletedAt: null
