@@ -40,9 +40,9 @@ const mockExpense: Expense = {
 	recurringExpenseId: null,
 	description: "Groceries",
 	installmentNumber: null,
-	purchaseDate: new Date("2026-04-01"),
-	dueDate: null,
-	paidDate: null,
+	purchasedAt: new Date("2026-04-01"),
+	dueAt: null,
+	paidAt: null,
 	amount: 150,
 	createdAt: new Date(),
 	updatedAt: new Date(),
@@ -284,7 +284,7 @@ describe("ExpenseService", () => {
 			amountPerInstallment: 200,
 			totalInstallments: 3,
 			paymentIntervalDays: 30,
-			firstPurchaseDate: "2026-04-01"
+			firstPurchasedAt: "2026-04-01"
 		}
 
 		it("should create installment expenses for existing periods and return first", async () => {
@@ -348,7 +348,7 @@ describe("ExpenseService", () => {
 			expect(mockRepository.createInstallmentExpenses).not.toHaveBeenCalled()
 		})
 
-		it("should pass purchaseDate only on first installment", async () => {
+		it("should pass purchasedAt only on first installment", async () => {
 			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
 				currentPeriod() as never
 			)
@@ -368,9 +368,9 @@ describe("ExpenseService", () => {
 			await service.create(dto)
 			const expenseRows = vi.mocked(mockRepository.createInstallmentExpenses)
 				.mock.calls[0][1]
-			expect(expenseRows[0].purchaseDate).not.toBeNull()
-			expect(expenseRows[1].purchaseDate).toBeNull()
-			expect(expenseRows[2].purchaseDate).toBeNull()
+			expect(expenseRows[0].purchasedAt).not.toBeNull()
+			expect(expenseRows[1].purchasedAt).toBeNull()
+			expect(expenseRows[2].purchasedAt).toBeNull()
 		})
 	})
 

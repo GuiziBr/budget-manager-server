@@ -111,9 +111,9 @@ export class ExpenseService {
 				amountPerInstallment,
 				totalInstallments,
 				paymentIntervalDays,
-				firstPurchaseDate
+				firstPurchasedAt
 			} = dto
-			const baseDate = new Date(firstPurchaseDate)
+			const baseDate = new Date(firstPurchasedAt)
 
 			const expenseRows = []
 			for (let i = 1; i <= totalInstallments; i++) {
@@ -135,8 +135,8 @@ export class ExpenseService {
 					description,
 					amount: amountPerInstallment,
 					installmentNumber: i,
-					dueDate,
-					purchaseDate: i === 1 ? baseDate : null
+					dueAt: dueDate,
+					purchasedAt: i === 1 ? baseDate : null
 				})
 			}
 
@@ -152,7 +152,7 @@ export class ExpenseService {
 					amountPerInstallment,
 					totalInstallments,
 					paymentIntervalDays,
-					firstPurchaseDate: baseDate
+					firstPurchasedAt: baseDate
 				},
 				expenseRows
 			)

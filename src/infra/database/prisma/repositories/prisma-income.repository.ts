@@ -17,7 +17,7 @@ export class PrismaIncomeRepository extends IncomeRepository {
 		description: string
 		amount: { toNumber(): number }
 		isSalary: boolean
-		receivedDate: Date | null
+		receivedAt: Date | null
 		createdAt: Date
 		updatedAt: Date
 		deletedAt: Date | null

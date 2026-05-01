@@ -22,9 +22,9 @@ type PrismaExpenseRow = {
 	recurringExpenseId: string | null
 	description: string
 	installmentNumber: number | null
-	purchaseDate: Date | null
-	dueDate: Date | null
-	paidDate: Date | null
+	purchasedAt: Date | null
+	dueAt: Date | null
+	paidAt: Date | null
 	amount: { toNumber(): number }
 	createdAt: Date
 	updatedAt: Date

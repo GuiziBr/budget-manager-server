@@ -4,7 +4,7 @@ export class Income {
 	description: string
 	amount: number
 	isSalary: boolean
-	receivedDate: Date | null
+	receivedAt: Date | null
 	createdAt: Date
 	updatedAt: Date
 	deletedAt: Date | null

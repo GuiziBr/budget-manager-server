@@ -4,7 +4,7 @@ export class InstallmentGroup {
 	amountPerInstallment: number
 	totalInstallments: number
 	paymentIntervalDays: number
-	firstPurchaseDate: Date
+	firstPurchasedAt: Date
 	createdAt: Date
 	updatedAt: Date
 	deletedAt: Date | null

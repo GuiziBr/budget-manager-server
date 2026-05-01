@@ -6,7 +6,7 @@ export const createIncomeSchema = z.object({
 	description: z.string().min(1),
 	amount: monetaryAmountSchema,
 	isSalary: z.boolean().optional().default(false),
-	receivedDate: z.iso.date().optional().nullable()
+	receivedAt: z.iso.date().optional().nullable()
 })
 
 export type CreateIncomeDTO = z.infer<typeof createIncomeSchema>
