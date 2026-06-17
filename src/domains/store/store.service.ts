@@ -42,9 +42,10 @@ export class StoreService {
 	}
 
 	async create(dto: CreateStoreDTO): Promise<Store> {
-		this.logger.debug(`Creating store: ${dto.name}`)
 		try {
-			return await this.storeRepository.create(dto)
+			const store = await this.storeRepository.create(dto)
+			this.logger.log(`Created store ${store.id}`)
+			return store
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to create store", error)
@@ -53,10 +54,11 @@ export class StoreService {
 	}
 
 	async update(id: string, dto: UpdateStoreDTO): Promise<Store> {
-		this.logger.debug(`Updating store with id: ${id}`)
 		try {
 			await this.findById(id)
-			return await this.storeRepository.update(id, dto)
+			const store = await this.storeRepository.update(id, dto)
+			this.logger.log(`Updated store ${id}`)
+			return store
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to update store with id: ${id}`, error)
@@ -65,10 +67,10 @@ export class StoreService {
 	}
 
 	async delete(id: string): Promise<void> {
-		this.logger.debug(`Deleting store with id: ${id}`)
 		try {
 			await this.findById(id)
-			return await this.storeRepository.delete(id)
+			await this.storeRepository.delete(id)
+			this.logger.log(`Deleted store ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to delete store with id: ${id}`, error)

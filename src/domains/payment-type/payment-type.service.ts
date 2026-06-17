@@ -42,9 +42,10 @@ export class PaymentTypeService {
 	}
 
 	async create(dto: CreatePaymentTypeDTO): Promise<PaymentType> {
-		this.logger.debug(`Creating payment type: ${dto.name}`)
 		try {
-			return await this.paymentTypeRepository.create(dto)
+			const paymentType = await this.paymentTypeRepository.create(dto)
+			this.logger.log(`Created payment type ${paymentType.id}`)
+			return paymentType
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to create payment type", error)
@@ -53,10 +54,11 @@ export class PaymentTypeService {
 	}
 
 	async update(id: string, dto: UpdatePaymentTypeDTO): Promise<PaymentType> {
-		this.logger.debug(`Updating payment type with id: ${id}`)
 		try {
 			await this.findById(id)
-			return await this.paymentTypeRepository.update(id, dto)
+			const paymentType = await this.paymentTypeRepository.update(id, dto)
+			this.logger.log(`Updated payment type ${id}`)
+			return paymentType
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to update payment type with id: ${id}`, error)
@@ -65,10 +67,10 @@ export class PaymentTypeService {
 	}
 
 	async delete(id: string): Promise<void> {
-		this.logger.debug(`Deleting payment type with id: ${id}`)
 		try {
 			await this.findById(id)
-			return await this.paymentTypeRepository.delete(id)
+			await this.paymentTypeRepository.delete(id)
+			this.logger.log(`Deleted payment type ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to delete payment type with id: ${id}`, error)
