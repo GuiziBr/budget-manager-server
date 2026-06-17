@@ -42,9 +42,10 @@ export class BankService {
 	}
 
 	async create(dto: CreateBankDTO): Promise<Bank> {
-		this.logger.debug(`Creating bank: ${dto.name}`)
 		try {
-			return await this.bankRepository.create(dto)
+			const bank = await this.bankRepository.create(dto)
+			this.logger.log(`Created bank ${bank.id}`)
+			return bank
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to create bank", error)
@@ -53,10 +54,11 @@ export class BankService {
 	}
 
 	async update(id: string, dto: UpdateBankDTO): Promise<Bank> {
-		this.logger.debug(`Updating bank with id: ${id}`)
 		try {
 			await this.findById(id)
-			return await this.bankRepository.update(id, dto)
+			const bank = await this.bankRepository.update(id, dto)
+			this.logger.log(`Updated bank ${id}`)
+			return bank
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to update bank with id: ${id}`, error)
@@ -65,10 +67,10 @@ export class BankService {
 	}
 
 	async delete(id: string): Promise<void> {
-		this.logger.debug(`Deleting bank with id: ${id}`)
 		try {
 			await this.findById(id)
-			return await this.bankRepository.delete(id)
+			await this.bankRepository.delete(id)
+			this.logger.log(`Deleted bank ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to delete bank with id: ${id}`, error)

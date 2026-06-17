@@ -109,6 +109,16 @@ Scope of change per column:
 
 ---
 
+### Configure production log levels
+
+The app currently calls `NestFactory.create(AppModule)` in `src/main.ts` with no `logger` option, so NestJS uses its default `ConsoleLogger` with **all levels enabled** — including `debug` and `verbose`. This means every `logger.debug(...)` call across the services is printed in all environments.
+
+When setting up production, configure level filtering so `debug`/`verbose` are dropped in prod while `log`/`warn`/`error` are retained:
+- Add a `LOG_LEVEL` (or `NODE_ENV`-driven) entry to the `Env` Zod schema in `src/infra/env.ts`
+- Pass an explicit `logger` array to `NestFactory.create` in `src/main.ts`, e.g. `["error", "warn", "log"]` in production vs. all levels in development
+
+---
+
 ### Database Seed Scripts
 
 Create a Prisma seed script (`prisma/seed.ts`) to populate the database with realistic development data. Should cover all domains: lookup tables (Category, PaymentType, Bank, Store), a set of budget periods, incomes, one-time and recurring expenses, and budget envelopes.

@@ -63,7 +63,6 @@ export class ExpenseService {
 	}
 
 	async create(dto: CreateExpenseDTO): Promise<Expense> {
-		this.logger.debug(`Creating ${dto.type} expense`)
 		try {
 			const period = await this.budgetPeriodService.findById(dto.budgetPeriodId)
 			await this.categoryService.findById(dto.categoryId)
@@ -79,15 +78,16 @@ export class ExpenseService {
 
 			if (dto.type === ExpenseType.ONE_TIME) {
 				const { type: _, ...data } = dto
-				return await this.expenseRepository.create(data)
+				const expense = await this.expenseRepository.create(data)
+				this.logger.log(`Created ${dto.type} expense ${expense.id}`)
+				return expense
 			}
 
 			if (dto.type === ExpenseType.RECURRING) {
 				const { type: _, ...fields } = dto
 				const startedAt = new Date(Date.UTC(period.year, period.month - 1, 1))
-				return await this.expenseRepository.createWithRecurringTemplate(
-					fields,
-					{
+				const expense =
+					await this.expenseRepository.createWithRecurringTemplate(fields, {
 						categoryId: fields.categoryId,
 						paymentTypeId: fields.paymentTypeId,
 						bankId: fields.bankId ?? null,
@@ -95,8 +95,9 @@ export class ExpenseService {
 						description: fields.description,
 						amount: fields.amount,
 						startedAt
-					}
-				)
+					})
+				this.logger.log(`Created ${dto.type} expense ${expense.id}`)
+				return expense
 			}
 
 			// installment
@@ -158,7 +159,9 @@ export class ExpenseService {
 			)
 
 			const first = expenses.find((e) => e.installmentNumber === 1)
-			return first ?? expenses[0]
+			const expense = first ?? expenses[0]
+			this.logger.log(`Created ${dto.type} expense ${expense.id}`)
+			return expense
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to create expense", error)
@@ -167,7 +170,6 @@ export class ExpenseService {
 	}
 
 	async update(id: string, dto: UpdateExpenseDTO): Promise<Expense> {
-		this.logger.debug(`Updating expense with id: ${id}`)
 		try {
 			const expense = await this.findById(id)
 			await this.assertPeriodIsNotPast(expense.budgetPeriodId, "update")
@@ -192,7 +194,9 @@ export class ExpenseService {
 				}
 			}
 
-			return await this.expenseRepository.update(id, dto)
+			const updated = await this.expenseRepository.update(id, dto)
+			this.logger.log(`Updated expense ${id}`)
+			return updated
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to update expense with id: ${id}`, error)
@@ -201,11 +205,11 @@ export class ExpenseService {
 	}
 
 	async delete(id: string): Promise<void> {
-		this.logger.debug(`Deleting expense with id: ${id}`)
 		try {
 			const expense = await this.findById(id)
 			await this.assertPeriodIsNotPast(expense.budgetPeriodId, "delete")
-			return await this.expenseRepository.delete(id)
+			await this.expenseRepository.delete(id)
+			this.logger.log(`Deleted expense ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to delete expense with id: ${id}`, error)
