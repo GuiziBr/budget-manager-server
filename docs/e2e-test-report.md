@@ -10,7 +10,7 @@
 | **Build** | commit `386476b`, app version `0.0.1` |
 | **Environment** | Local — `http://localhost:3000`, PostgreSQL via Docker Compose |
 | **Tooling** | `curl` (direct HTTP against the running server) |
-| **Overall result** | ⚠️ **PASS WITH FINDINGS** — lookup domains and budget-period fully pass; income passes except **1 open defect** (DEF-1: `receivedAt` date → `500`, [#28](https://github.com/GuiziBr/budget-manager-server/issues/28)) |
+| **Overall result** | ✅ **PASS** — all functional cases and business rules pass |
 
 ---
 
@@ -690,12 +690,11 @@ Each subsection covers all test cases for a single API.
 
 #### `POST /incomes`
 
-##### TC-92 — Valid, all fields (incl. `receivedAt` date) ❌
+##### TC-92 — Valid, all fields (incl. `receivedAt` date)
 
 - **Request body:** `{ "budgetPeriodId": "...", "description": "Monthly salary", "amount": 5000, "isSalary": true, "receivedAt": "2026-02-01" }`
-- **Expected:** `201` with the income persisted.
-- **Actual:** `500 Internal Server Error` — `receivedAt` date string is not coerced to a DateTime for the Prisma `@db.Date` column. See **DEF-1** ([#28](https://github.com/GuiziBr/budget-manager-server/issues/28)).
-- **Result:** ❌ **FAIL** (open defect)
+- **Expected / Actual:** `201` with the income persisted (`receivedAt` stored as `2026-02-01T00:00:00.000Z`).
+- **Result:** ✅ PASS
 
 ##### TC-93 — Valid, minimal (omit `isSalary` / `receivedAt`)
 
@@ -810,12 +809,11 @@ Each subsection covers all test cases for a single API.
 - **Expected / Actual:** `200`, `amount` updated, `updatedAt` bumped.
 - **Result:** ✅ PASS
 
-##### TC-114 — Update `receivedAt` to a date ❌
+##### TC-114 — Update `receivedAt` to a date
 
 - **Request body:** `{ "receivedAt": "2026-02-05" }`
-- **Expected:** `200` with `receivedAt` updated.
-- **Actual:** `500` — same root cause as TC-92. See **DEF-1** ([#28](https://github.com/GuiziBr/budget-manager-server/issues/28)).
-- **Result:** ❌ **FAIL** (open defect)
+- **Expected / Actual:** `200` with `receivedAt` updated.
+- **Result:** ✅ PASS
 
 ##### TC-115 — Clear `receivedAt` (`null`)
 
@@ -1045,7 +1043,7 @@ Each subsection covers all test cases for a single API.
 
 | ID | Method | Scenario | Expected | Actual | Status |
 |---|---|---|---|---|---|
-| TC-92 | `POST` | Valid, incl. `receivedAt` date | `201` | `500` | ❌ FAIL (DEF-1) |
+| TC-92 | `POST` | Valid, incl. `receivedAt` date | `201` | `201` | ✅ PASS |
 | TC-93 | `POST` | Valid, minimal (defaults) | `201` | `201` | ✅ PASS |
 | TC-94 | `POST` | `receivedAt: null` | `201` | `201` | ✅ PASS |
 | TC-95 | `POST` | Missing `budgetPeriodId` | `400` | `400` | ✅ PASS |
@@ -1067,7 +1065,7 @@ Each subsection covers all test cases for a single API.
 | TC-111 | `GET /:id` | Non-UUID | `400` | `400` | ✅ PASS |
 | TC-112 | `GET /:id` | Unknown UUID | `404` | `404` | ✅ PASS |
 | TC-113 | `PATCH /:id` | Update `amount` | `200` | `200` | ✅ PASS |
-| TC-114 | `PATCH /:id` | Update `receivedAt` date | `200` | `500` | ❌ FAIL (DEF-1) |
+| TC-114 | `PATCH /:id` | Update `receivedAt` date | `200` | `200` | ✅ PASS |
 | TC-115 | `PATCH /:id` | Clear `receivedAt` (`null`) | `200` | `200` | ✅ PASS |
 | TC-116 | `PATCH /:id` | Empty body `{}` | `400` | `400` | ✅ PASS |
 | TC-117 | `PATCH /:id` | Empty `description` | `400` | `400` | ✅ PASS |
@@ -1087,15 +1085,7 @@ Each subsection covers all test cases for a single API.
 
 ---
 
-## 6. Open Defects
-
-| # | Severity | Description | Tracked |
-|---|---|---|---|
-| DEF-1 | High | **`POST` / `PATCH /incomes` with a `receivedAt` date returns `500`.** The DTO validates `receivedAt` as a date-only string (`z.iso.date()`), but the Prisma `@db.Date` column requires an ISO-8601 DateTime, so the value is rejected by the client (TC-92, TC-114). Setting a received date is impossible. Omitting it or sending `null` works. Suggested fix: `z.coerce.date()`. The same `z.iso.date()` → `@db.Date` pattern likely affects the **expense** date fields (untested). | [#28](https://github.com/GuiziBr/budget-manager-server/issues/28) |
-
----
-
-## 7. Notes
+## 6. Notes
 
 - **Lookup entity shape:** `{ id, name, [hasBudgetEnvelope | hasStatement], createdAt, updatedAt, deletedAt }` — `deletedAt` is `null` on creation.
 - **Budget-period entity shape:** `{ id, year, month, createdAt, updatedAt, deletedAt }`. No `PATCH` endpoint — periods are immutable.
@@ -1107,6 +1097,6 @@ Each subsection covers all test cases for a single API.
 
 ---
 
-## 8. Conclusion
+## 7. Conclusion
 
-The four lookup domains and the budget-period domain pass fully. The income domain passes except for one defect: setting `receivedAt` to a date on `POST` or `PATCH` returns `500` (**DEF-1**, [#28](https://github.com/GuiziBr/budget-manager-server/issues/28)) — all other income behaviour (validation, defaults, filtering, CRUD, soft delete, empty-`PATCH` guard) is correct. The same date-handling pattern should be checked on the expense domain.
+All endpoints and business rules for the lookup domains, the budget-period domain, and the income domain pass. No open defects in the tested scope.
