@@ -9,9 +9,9 @@ export const updateExpenseSchema = z
 		paymentTypeId: z.uuid().optional(),
 		bankId: z.uuid().optional().nullable(),
 		storeId: z.uuid().optional().nullable(),
-		purchasedAt: z.iso.date().optional().nullable(),
-		dueAt: z.iso.date().optional().nullable(),
-		paidAt: z.iso.date().optional().nullable()
+		purchasedAt: z.coerce.date().optional().nullable(),
+		dueAt: z.coerce.date().optional().nullable(),
+		paidAt: z.coerce.date().optional().nullable()
 	})
 	.superRefine((data, ctx) => {
 		if (Object.values(data).every((v) => v === undefined)) {
