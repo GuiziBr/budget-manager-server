@@ -1,10 +1,10 @@
-# E2E Test Report — Lookup Domains
+# E2E Test Report
 
 ## 1. Summary
 
 | | |
 |---|---|
-| **Report title** | End-to-end API verification — lookup domains |
+| **Report title** | End-to-end API verification — lookup domains + budget-period |
 | **Date** | 2026-06-18 |
 | **Tester** | Ricardo (ricardo.guizi@invokemedia.com) |
 | **Build** | commit `386476b`, app version `0.0.1` |
@@ -22,8 +22,9 @@
 | **Payment-types** | Full lifecycle + business rules + `hasStatement` handling |
 | **Categories** | Full lifecycle + business rules + `hasBudgetEnvelope` handling |
 | **Stores** | Full lifecycle + business rules |
+| **Budget-periods** | `POST`, `GET` (list + by id), `DELETE` (no `PATCH` — periods are immutable) — plus `year`/`month` validation, duplicate-period rule, delete-with-linked-records guard, and the period-opening side effect |
 
-**Out of scope:** other domains (budget-period, budget-envelope, income, expense, recurring-expense, installment-group) and the business-scenario tests in `qa-postman-guide.md` Part 2.
+**Out of scope:** remaining domains (budget-envelope, income, expense, recurring-expense, installment-group) and the business-scenario tests in `qa-postman-guide.md` Part 2.
 
 ---
 
@@ -525,6 +526,163 @@ Each subsection covers all test cases for a single API.
 - **Evidence:** TC-68, TC-70.
 - **Result:** ✅ PASS
 
+### 4.5 — Budget-periods
+
+> Budget periods expose `POST`, `GET` (list + by id), and `DELETE` — there is **no `PATCH`** (periods are immutable). Create body is `{ year, month }` with no foreign keys.
+
+#### `POST /budget-periods`
+
+##### TC-71 — Valid body
+
+- **Request body:** `{ "year": 2027, "month": 4 }`
+- **Expected / Actual:** `201` with the created period (`id`, `year`, `month`, timestamps, `deletedAt: null`).
+- **Result:** ✅ PASS
+
+##### TC-72 — Missing `year`
+
+- **Request body:** `{ "month": 5 }`
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-73 — Missing `month`
+
+- **Request body:** `{ "year": 2027 }`
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-74 — `month` below range (`0`)
+
+- **Request body:** `{ "year": 2027, "month": 0 }`
+- **Expected / Actual:** `400` (min 1).
+- **Result:** ✅ PASS
+
+##### TC-75 — `month` above range (`13`)
+
+- **Request body:** `{ "year": 2027, "month": 13 }`
+- **Expected / Actual:** `400` (max 12).
+- **Result:** ✅ PASS
+
+##### TC-76 — `year` below range (`1999`)
+
+- **Request body:** `{ "year": 1999, "month": 6 }`
+- **Expected / Actual:** `400` (min 2000).
+- **Result:** ✅ PASS
+
+##### TC-77 — `year` above range (`2028`)
+
+- **Request body:** `{ "year": 2028, "month": 6 }`
+- **Expected / Actual:** `400` — the max allowed year is `current year + 1`. Current year is **2026**, so the cap is **2027**; `2028` is rejected.
+- **Result:** ✅ PASS
+
+##### TC-78 — Non-integer `month` (`1.5`)
+
+- **Request body:** `{ "year": 2027, "month": 1.5 }`
+- **Expected / Actual:** `400` (`int`).
+- **Result:** ✅ PASS
+
+##### TC-79 — Wrong types (strings)
+
+- **Request body:** `{ "year": "2027", "month": "6" }`
+- **Expected / Actual:** `400` (`invalid_type`, expected number).
+- **Result:** ✅ PASS
+
+##### TC-80 — `year` at upper bound (`2027`)
+
+- **Request body:** `{ "year": 2027, "month": 8 }`
+- **Expected / Actual:** `201` — `2027` is the cap (current year 2026 + 1); the upper bound is inclusive.
+- **Result:** ✅ PASS
+
+#### `GET /budget-periods`
+
+##### TC-81 — List all
+
+- **Expected / Actual:** `200` with an array of non-deleted periods.
+- **Result:** ✅ PASS
+
+#### `GET /budget-periods/:id`
+
+##### TC-82 — Valid id
+
+- **Expected / Actual:** `200` with the matching period.
+- **Result:** ✅ PASS
+
+##### TC-83 — Non-UUID id
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-84 — Unknown UUID
+
+- **Expected / Actual:** `404` ("Budget period with id ... not found").
+- **Result:** ✅ PASS
+
+#### `PATCH /budget-periods/:id`
+
+##### TC-85 — No update endpoint
+
+- **Request:** `PATCH /budget-periods/:id` body `{ "year": 2027 }`
+- **Expected / Actual:** `404` — no `PATCH` route is defined (periods are immutable).
+- **Result:** ✅ PASS
+
+#### `DELETE /budget-periods/:id`
+
+##### TC-86 — Valid delete (no linked records)
+
+- **Expected / Actual:** `204` (soft delete) when the period has no linked expenses, incomes, or envelopes.
+- **Result:** ✅ PASS
+
+##### TC-87 — GET after delete
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-88 — Excluded from list
+
+- **Expected / Actual:** deleted id not in `GET /budget-periods`.
+- **Result:** ✅ PASS
+
+##### TC-89 — Second delete
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-90 — Non-UUID id
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-91 — Unknown UUID
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+#### Business Rules — Budget-periods
+
+##### BR-13 — Period uniqueness `(year, month)`
+
+- **Rule:** posting a period for an existing active `(year, month)` → `409 Conflict` (`"A budget period for <year>/<month> already exists"`). Enforced both at the service layer and by a partial unique index (`WHERE deleted_at IS NULL`).
+- **Actual:** second `POST { "year": 2027, "month": 4 }` → `409`.
+- **Result:** ✅ PASS
+
+##### BR-14 — Delete blocked when records are linked
+
+- **Rule:** deleting a period that has linked expenses, incomes, or budget envelopes → `409 Conflict` (`"Cannot delete a budget period that has linked expenses, incomes, or budget envelopes"`).
+- **Steps:** create period → create an income on it → `DELETE` the period.
+- **Actual:** `DELETE` → `409` (income remained linked).
+- **Result:** ✅ PASS
+
+##### BR-15 — Soft delete hides records from reads
+
+- **Evidence:** TC-87 (`404` by id), TC-88 (excluded from list).
+- **Result:** ✅ PASS
+
+##### BR-16 — Period "opening" side effect
+
+- **Rule:** creating a period does not just insert a row — it **opens** the period, auto-creating budget envelopes for every `hasBudgetEnvelope` category, recurring-expense entries active for that period, and any installments due in it.
+- **Steps:** create a category with `hasBudgetEnvelope: true` → `POST` a new period → query its envelopes.
+- **Actual:** `GET /budget-envelopes?budgetPeriodId=<new>` returned one envelope for the category (`allocatedAmount: 0`, since the category name is not in the seed amount map).
+- **Result:** ✅ PASS — note for consumers: a freshly-opened period may already contain envelopes/expenses, and is therefore not deletable (see BR-14).
+
 ---
 
 ## 5. Results Matrix
@@ -631,12 +789,45 @@ Each subsection covers all test cases for a single API.
 | BR-11 | — | Soft delete hides reads | hidden | hidden | ✅ PASS |
 | BR-12 | — | Delete existence check | `404` | `404` | ✅ PASS |
 
+### Budget-periods
+
+| ID | Method | Scenario | Expected | Actual | Status |
+|---|---|---|---|---|---|
+| TC-71 | `POST` | Valid body | `201` | `201` | ✅ PASS |
+| TC-72 | `POST` | Missing `year` | `400` | `400` | ✅ PASS |
+| TC-73 | `POST` | Missing `month` | `400` | `400` | ✅ PASS |
+| TC-74 | `POST` | `month` = 0 | `400` | `400` | ✅ PASS |
+| TC-75 | `POST` | `month` = 13 | `400` | `400` | ✅ PASS |
+| TC-76 | `POST` | `year` = 1999 | `400` | `400` | ✅ PASS |
+| TC-77 | `POST` | `year` = 2028 (> max) | `400` | `400` | ✅ PASS |
+| TC-78 | `POST` | `month` = 1.5 (non-int) | `400` | `400` | ✅ PASS |
+| TC-79 | `POST` | String types | `400` | `400` | ✅ PASS |
+| TC-80 | `POST` | `year` = 2027 (= max) | `201` | `201` | ✅ PASS |
+| TC-81 | `GET` | List all | `200` array | `200` | ✅ PASS |
+| TC-82 | `GET /:id` | Valid id | `200` | `200` | ✅ PASS |
+| TC-83 | `GET /:id` | Non-UUID | `400` | `400` | ✅ PASS |
+| TC-84 | `GET /:id` | Unknown UUID | `404` | `404` | ✅ PASS |
+| TC-85 | `PATCH /:id` | No update endpoint | `404` | `404` | ✅ PASS |
+| TC-86 | `DELETE /:id` | Valid delete (no linked) | `204` | `204` | ✅ PASS |
+| TC-87 | `DELETE /:id` | GET after delete | `404` | `404` | ✅ PASS |
+| TC-88 | `DELETE /:id` | Excluded from list | excluded | excluded | ✅ PASS |
+| TC-89 | `DELETE /:id` | Second delete | `404` | `404` | ✅ PASS |
+| TC-90 | `DELETE /:id` | Non-UUID | `400` | `400` | ✅ PASS |
+| TC-91 | `DELETE /:id` | Unknown UUID | `404` | `404` | ✅ PASS |
+| BR-13 | `POST` | Duplicate `(year, month)` | `409` | `409` | ✅ PASS |
+| BR-14 | `DELETE` | Linked records present | `409` | `409` | ✅ PASS |
+| BR-15 | — | Soft delete hides reads | hidden | hidden | ✅ PASS |
+| BR-16 | `POST` | Opening side effect (envelopes/recurring/installments) | auto-created | auto-created | ✅ PASS |
+
 ---
 
 ## 6. Notes
 
-- **Created entity shape:** `{ id, name, [hasBudgetEnvelope | hasStatement], createdAt, updatedAt, deletedAt }` — `deletedAt` is `null` on creation.
-- **Boolean fields are required on create.** Although the DB columns default to `false`, the create schema requires `hasBudgetEnvelope` / `hasStatement` explicitly — omitting them returns `400`.
+- **Lookup entity shape:** `{ id, name, [hasBudgetEnvelope | hasStatement], createdAt, updatedAt, deletedAt }` — `deletedAt` is `null` on creation.
+- **Budget-period entity shape:** `{ id, year, month, createdAt, updatedAt, deletedAt }`. No `PATCH` endpoint — periods are immutable.
+- **Boolean fields are required on create** (categories / payment-types). Although the DB columns default to `false`, the create schema requires `hasBudgetEnvelope` / `hasStatement` explicitly — omitting them returns `400`.
+- **`year` bounds** for budget-periods: min `2000`, max `current year + 1` (inclusive). Current year at test time was 2026, so the accepted range was `2000`–`2027`.
+- **Opening a budget period has side effects:** it auto-creates budget envelopes (for `hasBudgetEnvelope` categories), recurring-expense entries, and due installments. A freshly-opened period may therefore already hold linked records and not be deletable.
 - **Validation error shape:** `400` with Zod issues under `message` (array), plus `error` and `statusCode`.
 - **Not-found message:** `{ "message": "<Domain> with id <uuid> not found", "error": "Not Found", "statusCode": 404 }`.
 
@@ -644,4 +835,4 @@ Each subsection covers all test cases for a single API.
 
 ## 7. Conclusion
 
-All CRUD endpoints and business rules for the four lookup domains pass. No open defects in the tested scope.
+All endpoints and business rules for the four lookup domains and the budget-period domain pass. No open defects in the tested scope.
