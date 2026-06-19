@@ -17,9 +17,9 @@ const baseExpenseFields = {
 }
 
 const dateFields = {
-	purchasedAt: z.iso.date().optional(),
-	dueAt: z.iso.date().optional(),
-	paidAt: z.iso.date().optional()
+	purchasedAt: z.coerce.date().optional(),
+	dueAt: z.coerce.date().optional(),
+	paidAt: z.coerce.date().optional()
 }
 
 export const createExpenseSchema = z.discriminatedUnion("type", [
@@ -41,7 +41,7 @@ export const createExpenseSchema = z.discriminatedUnion("type", [
 		amountPerInstallment: monetaryAmountSchema,
 		totalInstallments: z.number().int().min(2),
 		paymentIntervalDays: z.number().int().min(1),
-		firstPurchasedAt: z.iso.date()
+		firstPurchasedAt: z.coerce.date()
 	})
 ])
 
