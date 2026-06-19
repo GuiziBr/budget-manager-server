@@ -6,7 +6,7 @@ export const updateIncomeSchema = z
 		description: z.string().min(1).optional(),
 		amount: monetaryAmountSchema.optional(),
 		isSalary: z.boolean().optional(),
-		receivedAt: z.iso.date().optional().nullable()
+		receivedAt: z.coerce.date().optional().nullable()
 	})
 	.refine((obj) => Object.keys(obj).length > 0, {
 		message: "At least one field must be provided"

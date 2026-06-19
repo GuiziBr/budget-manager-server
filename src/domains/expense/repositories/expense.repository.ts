@@ -14,9 +14,9 @@ export type CreateExpenseData = {
 	storeId?: string | null
 	description: string
 	amount: number
-	purchasedAt?: string | null
-	dueAt?: string | null
-	paidAt?: string | null
+	purchasedAt?: Date | null
+	dueAt?: Date | null
+	paidAt?: Date | null
 }
 
 export type CreateRecurringTemplateData = {
@@ -57,9 +57,9 @@ export type UpdateExpenseData = {
 	paymentTypeId?: string
 	bankId?: string | null
 	storeId?: string | null
-	purchasedAt?: string | null
-	dueAt?: string | null
-	paidAt?: string | null
+	purchasedAt?: Date | null
+	dueAt?: Date | null
+	paidAt?: Date | null
 }
 
 export abstract class ExpenseRepository {
