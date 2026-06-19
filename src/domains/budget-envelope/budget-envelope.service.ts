@@ -50,7 +50,6 @@ export class BudgetEnvelopeService {
 	}
 
 	async create(dto: CreateBudgetEnvelopeDTO): Promise<BudgetEnvelope> {
-		this.logger.debug("Creating budget envelope")
 		try {
 			const [period, category] = await Promise.all([
 				this.budgetPeriodService.findById(dto.budgetPeriodId),
@@ -72,7 +71,9 @@ export class BudgetEnvelopeService {
 					`Category '${category.name}' does not support budget envelopes`
 				)
 			}
-			return await this.budgetEnvelopeRepository.create(dto)
+			const envelope = await this.budgetEnvelopeRepository.create(dto)
+			this.logger.log(`Created budget envelope ${envelope.id}`)
+			return envelope
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to create budget envelope", error)
@@ -84,11 +85,12 @@ export class BudgetEnvelopeService {
 		id: string,
 		dto: UpdateBudgetEnvelopeDTO
 	): Promise<BudgetEnvelope> {
-		this.logger.debug(`Updating budget envelope with id: ${id}`)
 		try {
 			const envelope = await this.findById(id)
 			await this.assertPeriodIsNotPast(envelope.budgetPeriodId, "update")
-			return await this.budgetEnvelopeRepository.update(id, dto)
+			const updated = await this.budgetEnvelopeRepository.update(id, dto)
+			this.logger.log(`Updated budget envelope ${id}`)
+			return updated
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(
@@ -100,11 +102,11 @@ export class BudgetEnvelopeService {
 	}
 
 	async delete(id: string): Promise<void> {
-		this.logger.debug(`Deleting budget envelope with id: ${id}`)
 		try {
 			const envelope = await this.findById(id)
 			await this.assertPeriodIsNotPast(envelope.budgetPeriodId, "delete")
-			return await this.budgetEnvelopeRepository.delete(id)
+			await this.budgetEnvelopeRepository.delete(id)
+			this.logger.log(`Deleted budget envelope ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(

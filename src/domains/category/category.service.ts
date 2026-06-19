@@ -52,9 +52,10 @@ export class CategoryService {
 	}
 
 	async create(dto: CreateCategoryDTO): Promise<Category> {
-		this.logger.debug(`Creating category: ${dto.name}`)
 		try {
-			return await this.categoryRepository.create(dto)
+			const category = await this.categoryRepository.create(dto)
+			this.logger.log(`Created category ${category.id}`)
+			return category
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to create category", error)
@@ -63,10 +64,11 @@ export class CategoryService {
 	}
 
 	async update(id: string, dto: UpdateCategoryDTO): Promise<Category> {
-		this.logger.debug(`Updating category with id: ${id}`)
 		try {
 			await this.findById(id)
-			return await this.categoryRepository.update(id, dto)
+			const category = await this.categoryRepository.update(id, dto)
+			this.logger.log(`Updated category ${id}`)
+			return category
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to update category with id: ${id}`, error)
@@ -75,10 +77,10 @@ export class CategoryService {
 	}
 
 	async delete(id: string): Promise<void> {
-		this.logger.debug(`Deleting category with id: ${id}`)
 		try {
 			await this.findById(id)
-			return await this.categoryRepository.delete(id)
+			await this.categoryRepository.delete(id)
+			this.logger.log(`Deleted category ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to delete category with id: ${id}`, error)

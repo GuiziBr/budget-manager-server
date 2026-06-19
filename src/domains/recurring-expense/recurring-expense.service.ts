@@ -78,7 +78,6 @@ export class RecurringExpenseService {
 	}
 
 	async create(dto: CreateRecurringExpenseDTO): Promise<RecurringExpense> {
-		this.logger.debug("Creating recurring expense")
 		try {
 			await Promise.all([
 				this.categoryService.findById(dto.categoryId),
@@ -88,7 +87,9 @@ export class RecurringExpenseService {
 					? this.storeService.findById(dto.storeId)
 					: Promise.resolve()
 			])
-			return await this.recurringExpenseRepository.create(dto)
+			const recurringExpense = await this.recurringExpenseRepository.create(dto)
+			this.logger.log(`Created recurring expense ${recurringExpense.id}`)
+			return recurringExpense
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to create recurring expense", error)
@@ -100,7 +101,6 @@ export class RecurringExpenseService {
 		id: string,
 		dto: UpdateRecurringExpenseDTO
 	): Promise<RecurringExpense> {
-		this.logger.debug(`Updating recurring expense with id: ${id}`)
 		try {
 			await this.findById(id)
 			if (dto.cancelledAt) {
@@ -114,7 +114,12 @@ export class RecurringExpenseService {
 					)
 				}
 			}
-			return await this.recurringExpenseRepository.update(id, dto)
+			const recurringExpense = await this.recurringExpenseRepository.update(
+				id,
+				dto
+			)
+			this.logger.log(`Updated recurring expense ${id}`)
+			return recurringExpense
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(
@@ -126,10 +131,10 @@ export class RecurringExpenseService {
 	}
 
 	async delete(id: string): Promise<void> {
-		this.logger.debug(`Deleting recurring expense with id: ${id}`)
 		try {
 			await this.findById(id)
-			return await this.recurringExpenseRepository.delete(id)
+			await this.recurringExpenseRepository.delete(id)
+			this.logger.log(`Deleted recurring expense ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(

@@ -49,7 +49,6 @@ export class BudgetPeriodService {
 	}
 
 	async create(dto: CreateBudgetPeriodDTO): Promise<BudgetPeriod> {
-		this.logger.debug(`Opening budget period: ${dto.year}/${dto.month}`)
 		try {
 			const existing = await this.budgetPeriodRepository.findByYearAndMonth(
 				dto.year,
@@ -81,11 +80,13 @@ export class BudgetPeriodService {
 				allocatedAmount: BUDGET_ENVELOPE_AMOUNTS[c.name] ?? 0
 			}))
 
-			return await this.budgetPeriodRepository.openPeriod(
+			const budgetPeriod = await this.budgetPeriodRepository.openPeriod(
 				dto,
 				recurringRows,
 				envelopeRows
 			)
+			this.logger.log(`Opened budget period ${budgetPeriod.id}`)
+			return budgetPeriod
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to open budget period", error)
@@ -110,7 +111,6 @@ export class BudgetPeriodService {
 	}
 
 	async delete(id: string): Promise<void> {
-		this.logger.debug(`Deleting budget period with id: ${id}`)
 		try {
 			await this.findById(id)
 			const hasLinked = await this.budgetPeriodRepository.hasLinkedRecords(id)
@@ -119,7 +119,8 @@ export class BudgetPeriodService {
 					"Cannot delete a budget period that has linked expenses, incomes, or budget envelopes"
 				)
 			}
-			return await this.budgetPeriodRepository.delete(id)
+			await this.budgetPeriodRepository.delete(id)
+			this.logger.log(`Deleted budget period ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to delete budget period with id: ${id}`, error)

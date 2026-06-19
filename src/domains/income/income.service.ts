@@ -47,12 +47,11 @@ export class IncomeService {
 	}
 
 	async create(dto: CreateIncomeDTO): Promise<Income> {
-		this.logger.debug(
-			`Creating income for budget period: ${dto.budgetPeriodId}`
-		)
 		try {
 			await this.budgetPeriodService.findById(dto.budgetPeriodId)
-			return await this.incomeRepository.create(dto)
+			const income = await this.incomeRepository.create(dto)
+			this.logger.log(`Created income ${income.id}`)
+			return income
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error("Failed to create income", error)
@@ -61,11 +60,12 @@ export class IncomeService {
 	}
 
 	async update(id: string, dto: UpdateIncomeDTO): Promise<Income> {
-		this.logger.debug(`Updating income with id: ${id}`)
 		try {
 			const income = await this.findById(id)
 			await this.assertPeriodIsNotPast(income.budgetPeriodId, "update")
-			return await this.incomeRepository.update(id, dto)
+			const updated = await this.incomeRepository.update(id, dto)
+			this.logger.log(`Updated income ${id}`)
+			return updated
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to update income with id: ${id}`, error)
@@ -74,11 +74,11 @@ export class IncomeService {
 	}
 
 	async delete(id: string): Promise<void> {
-		this.logger.debug(`Deleting income with id: ${id}`)
 		try {
 			const income = await this.findById(id)
 			await this.assertPeriodIsNotPast(income.budgetPeriodId, "delete")
-			return await this.incomeRepository.delete(id)
+			await this.incomeRepository.delete(id)
+			this.logger.log(`Deleted income ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to delete income with id: ${id}`, error)

@@ -39,7 +39,6 @@ export class InstallmentGroupService {
 		id: string,
 		dto: UpdateInstallmentGroupDTO
 	): Promise<InstallmentGroup> {
-		this.logger.debug(`Updating installment group with id: ${id}`)
 		try {
 			await this.findById(id)
 
@@ -47,12 +46,14 @@ export class InstallmentGroupService {
 			const currentYear = now.getUTCFullYear()
 			const currentMonth = now.getUTCMonth() + 1
 
-			return await this.installmentGroupRepository.update(
+			const group = await this.installmentGroupRepository.update(
 				id,
 				dto,
 				currentYear,
 				currentMonth
 			)
+			this.logger.log(`Updated installment group ${id}`)
+			return group
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(
