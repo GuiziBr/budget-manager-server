@@ -4,13 +4,13 @@
 
 | | |
 |---|---|
-| **Report title** | End-to-end API verification — lookup domains + budget-period |
+| **Report title** | End-to-end API verification — lookup domains, budget-period, income |
 | **Date** | 2026-06-18 |
 | **Tester** | Ricardo (ricardo.guizi@invokemedia.com) |
 | **Build** | commit `386476b`, app version `0.0.1` |
 | **Environment** | Local — `http://localhost:3000`, PostgreSQL via Docker Compose |
 | **Tooling** | `curl` (direct HTTP against the running server) |
-| **Overall result** | ✅ **PASS** — all functional cases and business rules pass |
+| **Overall result** | ⚠️ **PASS WITH FINDINGS** — lookup domains and budget-period fully pass; income passes except **1 open defect** (DEF-1: `receivedAt` date → `500`, [#28](https://github.com/GuiziBr/budget-manager-server/issues/28)) |
 
 ---
 
@@ -23,8 +23,9 @@
 | **Categories** | Full lifecycle + business rules + `hasBudgetEnvelope` handling |
 | **Stores** | Full lifecycle + business rules |
 | **Budget-periods** | `POST`, `GET` (list + by id), `DELETE` (no `PATCH` — periods are immutable) — plus `year`/`month` validation, duplicate-period rule, delete-with-linked-records guard, and the period-opening side effect |
+| **Income** | Full lifecycle — `POST`, `GET` (list + by id, `?budgetPeriodId` filter), `PATCH`, `DELETE` — plus monetary-amount rules, optional-field defaults, period-existence check, and empty-`PATCH` guard |
 
-**Out of scope:** remaining domains (budget-envelope, income, expense, recurring-expense, installment-group) and the business-scenario tests in `qa-postman-guide.md` Part 2.
+**Out of scope:** remaining domains (budget-envelope, expense, recurring-expense, installment-group) and the business-scenario tests in `qa-postman-guide.md` Part 2.
 
 ---
 
@@ -683,6 +684,227 @@ Each subsection covers all test cases for a single API.
 - **Actual:** `GET /budget-envelopes?budgetPeriodId=<new>` returned one envelope for the category (`allocatedAmount: 0`, since the category name is not in the seed amount map).
 - **Result:** ✅ PASS — note for consumers: a freshly-opened period may already contain envelopes/expenses, and is therefore not deletable (see BR-14).
 
+### 4.6 — Income
+
+> Income exposes full CRUD. Create body: `{ budgetPeriodId, description, amount }` + optional `isSalary` (default `false`) and `receivedAt` (date, nullable). `GET /incomes` supports a `?budgetPeriodId=` filter.
+
+#### `POST /incomes`
+
+##### TC-92 — Valid, all fields (incl. `receivedAt` date) ❌
+
+- **Request body:** `{ "budgetPeriodId": "...", "description": "Monthly salary", "amount": 5000, "isSalary": true, "receivedAt": "2026-02-01" }`
+- **Expected:** `201` with the income persisted.
+- **Actual:** `500 Internal Server Error` — `receivedAt` date string is not coerced to a DateTime for the Prisma `@db.Date` column. See **DEF-1** ([#28](https://github.com/GuiziBr/budget-manager-server/issues/28)).
+- **Result:** ❌ **FAIL** (open defect)
+
+##### TC-93 — Valid, minimal (omit `isSalary` / `receivedAt`)
+
+- **Request body:** `{ "budgetPeriodId": "...", "description": "Freelance", "amount": 800 }`
+- **Expected / Actual:** `201` with `isSalary: false` and `receivedAt: null` (defaults applied).
+- **Result:** ✅ PASS
+
+##### TC-94 — `receivedAt: null` explicit
+
+- **Expected / Actual:** `201` with `receivedAt: null`.
+- **Result:** ✅ PASS
+
+##### TC-95 — Missing `budgetPeriodId`
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-96 — Missing `description`
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-97 — Missing `amount`
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-98 — `budgetPeriodId` non-UUID
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-99 — `budgetPeriodId` unknown (valid UUID)
+
+- **Expected / Actual:** `404` ("Budget period with id ... not found") — create validates the period exists.
+- **Result:** ✅ PASS
+
+##### TC-100 — `amount` = 0
+
+- **Expected / Actual:** `400` (must be positive).
+- **Result:** ✅ PASS
+
+##### TC-101 — `amount` negative
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-102 — `amount` > max (`100000000`)
+
+- **Expected / Actual:** `400` (max `99,999,999.99`).
+- **Result:** ✅ PASS
+
+##### TC-103 — `amount` with 3 decimals (`10.123`)
+
+- **Expected / Actual:** `400` (max 2 decimals).
+- **Result:** ✅ PASS
+
+##### TC-104 — Empty `description`
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-105 — `isSalary` wrong type
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-106 — `receivedAt` bad format
+
+- **Request body:** `{ ..., "receivedAt": "not-a-date" }`
+- **Expected / Actual:** `400` (validation rejects malformed date before reaching Prisma).
+- **Result:** ✅ PASS
+
+#### `GET /incomes`
+
+##### TC-107 — List all
+
+- **Expected / Actual:** `200` array.
+- **Result:** ✅ PASS
+
+##### TC-108 — List filtered `?budgetPeriodId=`
+
+- **Expected / Actual:** `200` array scoped to the period.
+- **Result:** ✅ PASS
+
+##### TC-109 — Filter value non-UUID
+
+- **Expected / Actual:** `400` (query validation).
+- **Result:** ✅ PASS
+
+#### `GET /incomes/:id`
+
+##### TC-110 — Valid id
+
+- **Expected / Actual:** `200`.
+- **Result:** ✅ PASS
+
+##### TC-111 — Non-UUID id
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-112 — Unknown UUID
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+#### `PATCH /incomes/:id`
+
+##### TC-113 — Update `amount`
+
+- **Expected / Actual:** `200`, `amount` updated, `updatedAt` bumped.
+- **Result:** ✅ PASS
+
+##### TC-114 — Update `receivedAt` to a date ❌
+
+- **Request body:** `{ "receivedAt": "2026-02-05" }`
+- **Expected:** `200` with `receivedAt` updated.
+- **Actual:** `500` — same root cause as TC-92. See **DEF-1** ([#28](https://github.com/GuiziBr/budget-manager-server/issues/28)).
+- **Result:** ❌ **FAIL** (open defect)
+
+##### TC-115 — Clear `receivedAt` (`null`)
+
+- **Request body:** `{ "receivedAt": null }`
+- **Expected / Actual:** `200` with `receivedAt: null`.
+- **Result:** ✅ PASS
+
+##### TC-116 — Empty body `{}`
+
+- **Expected / Actual:** `400` — `"At least one field must be provided"` (guard present).
+- **Result:** ✅ PASS
+
+##### TC-117 — Empty `description`
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-118 — `amount` = 0
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-119 — Non-UUID id
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-120 — Unknown UUID
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+#### `DELETE /incomes/:id`
+
+##### TC-121 — Valid delete
+
+- **Expected / Actual:** `204` (soft delete).
+- **Result:** ✅ PASS
+
+##### TC-122 — GET after delete
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-123 — Second delete
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-124 — Non-UUID id
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-125 — Unknown UUID
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+#### Business Rules — Income
+
+##### BR-17 — Create validates budget period existence
+
+- **Rule:** `create` checks the referenced budget period exists; unknown period → `404`.
+- **Evidence:** TC-99.
+- **Result:** ✅ PASS
+
+##### BR-18 — Optional-field defaults
+
+- **Rule:** omitting `isSalary` / `receivedAt` yields `isSalary: false`, `receivedAt: null`.
+- **Evidence:** TC-93.
+- **Result:** ✅ PASS
+
+##### BR-19 — Soft delete hides records from reads
+
+- **Evidence:** TC-122.
+- **Result:** ✅ PASS
+
+##### BR-20 — Delete existence check
+
+- **Evidence:** TC-123, TC-125.
+- **Result:** ✅ PASS
+
+##### BR-21 — Empty `PATCH` rejected
+
+- **Rule:** `PATCH {}` → `400` (the lookup-domain empty-`PATCH` guard, [#23](https://github.com/GuiziBr/budget-manager-server/issues/23), is present on income).
+- **Evidence:** TC-116.
+- **Result:** ✅ PASS
+
 ---
 
 ## 5. Results Matrix
@@ -819,9 +1041,61 @@ Each subsection covers all test cases for a single API.
 | BR-15 | — | Soft delete hides reads | hidden | hidden | ✅ PASS |
 | BR-16 | `POST` | Opening side effect (envelopes/recurring/installments) | auto-created | auto-created | ✅ PASS |
 
+### Income
+
+| ID | Method | Scenario | Expected | Actual | Status |
+|---|---|---|---|---|---|
+| TC-92 | `POST` | Valid, incl. `receivedAt` date | `201` | `500` | ❌ FAIL (DEF-1) |
+| TC-93 | `POST` | Valid, minimal (defaults) | `201` | `201` | ✅ PASS |
+| TC-94 | `POST` | `receivedAt: null` | `201` | `201` | ✅ PASS |
+| TC-95 | `POST` | Missing `budgetPeriodId` | `400` | `400` | ✅ PASS |
+| TC-96 | `POST` | Missing `description` | `400` | `400` | ✅ PASS |
+| TC-97 | `POST` | Missing `amount` | `400` | `400` | ✅ PASS |
+| TC-98 | `POST` | `budgetPeriodId` non-UUID | `400` | `400` | ✅ PASS |
+| TC-99 | `POST` | `budgetPeriodId` unknown | `404` | `404` | ✅ PASS |
+| TC-100 | `POST` | `amount` = 0 | `400` | `400` | ✅ PASS |
+| TC-101 | `POST` | `amount` negative | `400` | `400` | ✅ PASS |
+| TC-102 | `POST` | `amount` > max | `400` | `400` | ✅ PASS |
+| TC-103 | `POST` | `amount` 3 decimals | `400` | `400` | ✅ PASS |
+| TC-104 | `POST` | Empty `description` | `400` | `400` | ✅ PASS |
+| TC-105 | `POST` | `isSalary` wrong type | `400` | `400` | ✅ PASS |
+| TC-106 | `POST` | `receivedAt` bad format | `400` | `400` | ✅ PASS |
+| TC-107 | `GET` | List all | `200` array | `200` | ✅ PASS |
+| TC-108 | `GET` | List filtered by period | `200` | `200` | ✅ PASS |
+| TC-109 | `GET` | Filter value non-UUID | `400` | `400` | ✅ PASS |
+| TC-110 | `GET /:id` | Valid id | `200` | `200` | ✅ PASS |
+| TC-111 | `GET /:id` | Non-UUID | `400` | `400` | ✅ PASS |
+| TC-112 | `GET /:id` | Unknown UUID | `404` | `404` | ✅ PASS |
+| TC-113 | `PATCH /:id` | Update `amount` | `200` | `200` | ✅ PASS |
+| TC-114 | `PATCH /:id` | Update `receivedAt` date | `200` | `500` | ❌ FAIL (DEF-1) |
+| TC-115 | `PATCH /:id` | Clear `receivedAt` (`null`) | `200` | `200` | ✅ PASS |
+| TC-116 | `PATCH /:id` | Empty body `{}` | `400` | `400` | ✅ PASS |
+| TC-117 | `PATCH /:id` | Empty `description` | `400` | `400` | ✅ PASS |
+| TC-118 | `PATCH /:id` | `amount` = 0 | `400` | `400` | ✅ PASS |
+| TC-119 | `PATCH /:id` | Non-UUID | `400` | `400` | ✅ PASS |
+| TC-120 | `PATCH /:id` | Unknown UUID | `404` | `404` | ✅ PASS |
+| TC-121 | `DELETE /:id` | Valid delete | `204` | `204` | ✅ PASS |
+| TC-122 | `DELETE /:id` | GET after delete | `404` | `404` | ✅ PASS |
+| TC-123 | `DELETE /:id` | Second delete | `404` | `404` | ✅ PASS |
+| TC-124 | `DELETE /:id` | Non-UUID | `400` | `400` | ✅ PASS |
+| TC-125 | `DELETE /:id` | Unknown UUID | `404` | `404` | ✅ PASS |
+| BR-17 | `POST` | Validates period existence | `404` | `404` | ✅ PASS |
+| BR-18 | `POST` | Optional-field defaults | defaults | defaults | ✅ PASS |
+| BR-19 | — | Soft delete hides reads | hidden | hidden | ✅ PASS |
+| BR-20 | — | Delete existence check | `404` | `404` | ✅ PASS |
+| BR-21 | `PATCH` | Empty body rejected | `400` | `400` | ✅ PASS |
+
 ---
 
-## 6. Notes
+## 6. Open Defects
+
+| # | Severity | Description | Tracked |
+|---|---|---|---|
+| DEF-1 | High | **`POST` / `PATCH /incomes` with a `receivedAt` date returns `500`.** The DTO validates `receivedAt` as a date-only string (`z.iso.date()`), but the Prisma `@db.Date` column requires an ISO-8601 DateTime, so the value is rejected by the client (TC-92, TC-114). Setting a received date is impossible. Omitting it or sending `null` works. Suggested fix: `z.coerce.date()`. The same `z.iso.date()` → `@db.Date` pattern likely affects the **expense** date fields (untested). | [#28](https://github.com/GuiziBr/budget-manager-server/issues/28) |
+
+---
+
+## 7. Notes
 
 - **Lookup entity shape:** `{ id, name, [hasBudgetEnvelope | hasStatement], createdAt, updatedAt, deletedAt }` — `deletedAt` is `null` on creation.
 - **Budget-period entity shape:** `{ id, year, month, createdAt, updatedAt, deletedAt }`. No `PATCH` endpoint — periods are immutable.
@@ -833,6 +1107,6 @@ Each subsection covers all test cases for a single API.
 
 ---
 
-## 7. Conclusion
+## 8. Conclusion
 
-All endpoints and business rules for the four lookup domains and the budget-period domain pass. No open defects in the tested scope.
+The four lookup domains and the budget-period domain pass fully. The income domain passes except for one defect: setting `receivedAt` to a date on `POST` or `PATCH` returns `500` (**DEF-1**, [#28](https://github.com/GuiziBr/budget-manager-server/issues/28)) — all other income behaviour (validation, defaults, filtering, CRUD, soft delete, empty-`PATCH` guard) is correct. The same date-handling pattern should be checked on the expense domain.
