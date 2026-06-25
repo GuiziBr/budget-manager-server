@@ -4,8 +4,7 @@ import {
 	Injectable,
 	InternalServerErrorException,
 	Logger,
-	NotFoundException,
-	UnprocessableEntityException
+	NotFoundException
 } from "@nestjs/common"
 import { BudgetPeriodService } from "@/domains/budget-period/budget-period.service"
 import { CategoryService } from "@/domains/category/category.service"
@@ -172,7 +171,6 @@ export class ExpenseService {
 	async update(id: string, dto: UpdateExpenseDTO): Promise<Expense> {
 		try {
 			const expense = await this.findById(id)
-			await this.assertPeriodIsNotPast(expense.budgetPeriodId, "update")
 
 			if (dto.categoryId) {
 				await this.categoryService.findById(dto.categoryId)
@@ -206,32 +204,13 @@ export class ExpenseService {
 
 	async delete(id: string): Promise<void> {
 		try {
-			const expense = await this.findById(id)
-			await this.assertPeriodIsNotPast(expense.budgetPeriodId, "delete")
+			await this.findById(id)
 			await this.expenseRepository.delete(id)
 			this.logger.log(`Deleted expense ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
 			this.logger.error(`Failed to delete expense with id: ${id}`, error)
 			throw new InternalServerErrorException()
-		}
-	}
-
-	private async assertPeriodIsNotPast(
-		budgetPeriodId: string,
-		action: "update" | "delete"
-	): Promise<void> {
-		const period = await this.budgetPeriodService.findById(budgetPeriodId)
-		const now = new Date()
-		const currentYear = now.getUTCFullYear()
-		const currentMonth = now.getUTCMonth() + 1
-		const isPastPeriod =
-			period.year < currentYear ||
-			(period.year === currentYear && period.month < currentMonth)
-		if (isPastPeriod) {
-			throw new UnprocessableEntityException(
-				`Cannot ${action} an expense from a past budget period`
-			)
 		}
 	}
 }

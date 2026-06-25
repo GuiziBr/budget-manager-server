@@ -1,8 +1,7 @@
 import {
 	BadRequestException,
 	InternalServerErrorException,
-	NotFoundException,
-	UnprocessableEntityException
+	NotFoundException
 } from "@nestjs/common"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { BudgetPeriodService } from "@/domains/budget-period/budget-period.service"
@@ -20,13 +19,6 @@ const currentPeriod = () => {
 		year: now.getUTCFullYear(),
 		month: now.getUTCMonth() + 1
 	}
-}
-
-const previousPeriod = () => {
-	const { year, month } = currentPeriod()
-	const prev =
-		month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 }
-	return { id: "period-uuid-past", ...prev }
 }
 
 const mockExpense: Expense = {
@@ -390,15 +382,20 @@ describe("ExpenseService", () => {
 			expect(mockRepository.update).toHaveBeenCalledWith("expense-uuid-1", dto)
 		})
 
-		it("should throw UnprocessableEntityException for past period", async () => {
-			vi.mocked(mockRepository.findById).mockResolvedValue(mockExpense)
-			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
-				previousPeriod() as never
-			)
-			await expect(
-				service.update("expense-uuid-1", { description: "x" })
-			).rejects.toThrow(UnprocessableEntityException)
-			expect(mockRepository.update).not.toHaveBeenCalled()
+		it("should update an expense from a past budget period", async () => {
+			const pastExpense = { ...mockExpense, budgetPeriodId: "period-uuid-past" }
+			vi.mocked(mockRepository.findById).mockResolvedValue(pastExpense)
+			vi.mocked(mockRepository.update).mockResolvedValue({
+				...pastExpense,
+				description: "x"
+			})
+			const result = await service.update("expense-uuid-1", {
+				description: "x"
+			})
+			expect(result.description).toBe("x")
+			expect(mockRepository.update).toHaveBeenCalledWith("expense-uuid-1", {
+				description: "x"
+			})
 		})
 
 		it("should throw NotFoundException when expense not found", async () => {
@@ -488,37 +485,19 @@ describe("ExpenseService", () => {
 	})
 
 	describe("delete", () => {
-		it("should delete expense when period is current", async () => {
+		it("should delete an expense", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockExpense)
-			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
-				currentPeriod() as never
-			)
 			vi.mocked(mockRepository.delete).mockResolvedValue(undefined)
 			await service.delete("expense-uuid-1")
 			expect(mockRepository.delete).toHaveBeenCalledWith("expense-uuid-1")
 		})
 
-		it("should throw UnprocessableEntityException for past period", async () => {
-			vi.mocked(mockRepository.findById).mockResolvedValue(mockExpense)
-			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
-				previousPeriod() as never
-			)
-			await expect(service.delete("expense-uuid-1")).rejects.toThrow(
-				UnprocessableEntityException
-			)
-			expect(mockRepository.delete).not.toHaveBeenCalled()
-		})
-
-		it("should throw UnprocessableEntityException for past year", async () => {
-			vi.mocked(mockRepository.findById).mockResolvedValue(mockExpense)
-			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue({
-				id: "period-old",
-				year: currentPeriod().year - 1,
-				month: 12
-			} as never)
-			await expect(service.delete("expense-uuid-1")).rejects.toThrow(
-				UnprocessableEntityException
-			)
+		it("should delete an expense from a past budget period", async () => {
+			const pastExpense = { ...mockExpense, budgetPeriodId: "period-uuid-past" }
+			vi.mocked(mockRepository.findById).mockResolvedValue(pastExpense)
+			vi.mocked(mockRepository.delete).mockResolvedValue(undefined)
+			await service.delete("expense-uuid-1")
+			expect(mockRepository.delete).toHaveBeenCalledWith("expense-uuid-1")
 		})
 
 		it("should throw NotFoundException when expense not found", async () => {
