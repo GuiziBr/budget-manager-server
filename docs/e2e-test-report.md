@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Report title** | End-to-end API verification — lookup domains, budget-period, income, budget-envelope |
+| **Report title** | End-to-end API verification — lookup domains, budget-period, income, budget-envelope, expense |
 | **Date** | 2026-06-18 |
 | **Tester** | Ricardo (ricardo.guizi@invokemedia.com) |
 | **Build** | commit `386476b`, app version `0.0.1` |
@@ -25,8 +25,9 @@
 | **Budget-periods** | `POST`, `GET` (list + by id), `DELETE` (no `PATCH` — periods are immutable) — plus `year`/`month` validation, duplicate-period rule, delete-with-linked-records guard, and the period-opening side effect |
 | **Income** | Full lifecycle — `POST`, `GET` (list + by id, `?budgetPeriodId` filter), `PATCH`, `DELETE` — plus monetary-amount rules, optional-field defaults, period-existence check, and empty-`PATCH` guard |
 | **Budget-envelopes** | Full lifecycle — `POST`, `GET` (list + by id, `?budgetPeriodId` filter), `PATCH`, `DELETE` — plus period/category existence, past-period guard, category-support rule, `(period, category)` uniqueness |
+| **Expenses** | Full lifecycle — discriminated-union `POST` (one-time/recurring/installment), paginated `GET` (list + by id), `PATCH`, `DELETE` — plus FK existence, `hasStatement → bankId` rule, installment period-spread, and past-period guard on update/delete |
 
-**Out of scope:** remaining domains (expense, recurring-expense, installment-group) and the business-scenario tests in `qa-postman-guide.md` Part 2.
+**Out of scope:** the expense-derived **recurring-expense** and **installment-group** management endpoints, and the business-scenario tests in `qa-postman-guide.md` Part 2.
 
 ---
 
@@ -1112,6 +1113,304 @@ Each subsection covers all test cases for a single API.
 - **Observation:** the envelope entity exposes only `allocatedAmount` — no `spentAmount`, `remainingAmount`, or utilization. Consumers must aggregate spend client-side from expenses (consistent with `qa-postman-guide.md` S4).
 - **Result:** ℹ️ Documented (not a defect).
 
+### 4.8 — Expenses
+
+> `POST /expenses` is a discriminated union on `type` (`one-time` / `recurring` / `installment`). Base fields: `budgetPeriodId`, `categoryId`, `paymentTypeId` (required), `bankId`, `storeId` (optional, nullable), `description`. Date fields use `z.coerce.date()`. `GET /expenses` is paginated: `{ data, total, page, limit }` with `?budgetPeriodId`, `?page`, `?limit`. Several business rules apply (FK existence, `hasStatement → bankId`, installment period-spread, past-period guard on update/delete).
+
+#### `POST /expenses` — one-time
+
+##### TC-157 — Valid minimal (no bank/dates)
+
+- **Request body:** `{ "type": "one-time", "budgetPeriodId", "categoryId", "paymentTypeId" (no-statement), "description", "amount" }`
+- **Expected / Actual:** `201` with the full expense row (`installmentGroupId: null`, `recurringExpenseId: null`).
+- **Result:** ✅ PASS
+
+##### TC-158 — Valid with `purchasedAt` / `dueAt` / `paidAt` dates
+
+- **Expected / Actual:** `201` with dates coerced (e.g. `purchasedAt: "2027-06-10T00:00:00.000Z"`). Confirms the date-coercion fix ([#29](https://github.com/GuiziBr/budget-manager-server/pull/29)) covers expense date fields.
+- **Result:** ✅ PASS
+
+##### TC-159 — Valid with `bankId` + `storeId`
+
+- **Expected / Actual:** `201`.
+- **Result:** ✅ PASS
+
+#### `POST /expenses` — recurring
+
+##### TC-160 — Valid
+
+- **Request body:** `{ "type": "recurring", ...base, "amount" }`
+- **Expected / Actual:** `201`; also creates a recurring-expense template (`startedAt` = period start).
+- **Result:** ✅ PASS
+
+#### `POST /expenses` — installment
+
+##### TC-161 — Valid (spread across periods)
+
+- **Request body:** `{ "type": "installment", ...base, "amountPerInstallment", "totalInstallments": 2, "paymentIntervalDays": 30, "firstPurchasedAt" }` with periods existing for each due month.
+- **Expected / Actual:** `201`; returns the installment with `installmentGroupId` set and `installmentNumber: 1`.
+- **Result:** ✅ PASS
+
+##### TC-162 — Partial: some due months lack a period
+
+- **Setup:** due dates span a month with a period and a month without (or soft-deleted).
+- **Expected / Actual:** `201` — installments whose due month has no active period are **silently skipped**; only matching ones are created. See BR-32.
+- **Result:** ✅ PASS
+
+##### TC-163 — All due months lack a period
+
+- **Expected / Actual:** `400` (`"No matching budget periods found for any installment due date"`).
+- **Result:** ✅ PASS
+
+##### TC-164 — `totalInstallments` = 1
+
+- **Expected / Actual:** `400` (min 2).
+- **Result:** ✅ PASS
+
+##### TC-165 — `paymentIntervalDays` = 0
+
+- **Expected / Actual:** `400` (min 1).
+- **Result:** ✅ PASS
+
+##### TC-166 — Missing `totalInstallments`
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+#### `POST /expenses` — shared validation & rules
+
+##### TC-167 — Missing `type`
+
+- **Expected / Actual:** `400` (discriminated union requires `type`).
+- **Result:** ✅ PASS
+
+##### TC-168 — Invalid `type`
+
+- **Request body:** `{ "type": "weekly", ... }`
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-169 — One-time missing `amount`
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-170 — Missing `categoryId`
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-171 — `hasStatement` payment type without `bankId`
+
+- **Expected / Actual:** `400` (`"bankId is required for this payment type"`).
+- **Result:** ✅ PASS
+
+##### TC-172 — Unknown `budgetPeriodId`
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-173 — Unknown `categoryId`
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-174 — Unknown `paymentTypeId`
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-175 — `amount` = 0
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+#### `GET /expenses`
+
+##### TC-176 — List shape & defaults
+
+- **Expected / Actual:** `200` with `{ data, total, page, limit }`; defaults `page: 1`, `limit: 20`.
+- **Result:** ✅ PASS
+
+##### TC-177 — Filtered `?budgetPeriodId=`
+
+- **Expected / Actual:** `200`.
+- **Result:** ✅ PASS
+
+##### TC-178 — `?page=1&limit=10`
+
+- **Expected / Actual:** `200`.
+- **Result:** ✅ PASS
+
+##### TC-179 — `?limit=100` (max)
+
+- **Expected / Actual:** `200`.
+- **Result:** ✅ PASS
+
+##### TC-180 — `?limit=101` (> max)
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-181 — `?page=0` (< min)
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-182 — Filter value non-UUID
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+#### `GET /expenses/:id`
+
+##### TC-183 — Valid id
+
+- **Expected / Actual:** `200`.
+- **Result:** ✅ PASS
+
+##### TC-184 — Non-UUID id
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-185 — Unknown UUID
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+#### `PATCH /expenses/:id`
+
+##### TC-186 — Update `amount` + `description`
+
+- **Expected / Actual:** `200`.
+- **Result:** ✅ PASS
+
+##### TC-187 — Clear `paidAt` (`null`)
+
+- **Expected / Actual:** `200` with `paidAt: null`.
+- **Result:** ✅ PASS
+
+##### TC-188 — Set `paidAt` to a date
+
+- **Expected / Actual:** `200` with `paidAt: "2027-06-12T00:00:00.000Z"` (coercion).
+- **Result:** ✅ PASS
+
+##### TC-189 — Empty body `{}`
+
+- **Expected / Actual:** `400` — `"At least one field must be provided"`.
+- **Result:** ✅ PASS
+
+##### TC-190 — `amount` = 0
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-191 — Change to `hasStatement` payment type without bank
+
+- **Request body:** `{ "paymentTypeId": "<has-statement>" }` on an expense with no bank.
+- **Expected / Actual:** `400` (`"bankId is required for this payment type"`).
+- **Result:** ✅ PASS
+
+##### TC-192 — Unknown `categoryId`
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-193 — Non-UUID id
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-194 — Unknown UUID
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-195 — Past-period expense
+
+- **Expected / Actual:** `422` (`"Cannot update an expense from a past budget period"`).
+- **Result:** ✅ PASS
+
+#### `DELETE /expenses/:id`
+
+##### TC-196 — Past-period expense
+
+- **Expected / Actual:** `422` (`"Cannot delete an expense from a past budget period"`).
+- **Result:** ✅ PASS
+
+##### TC-197 — Valid delete
+
+- **Expected / Actual:** `204` (soft delete) on a current/future-period expense.
+- **Result:** ✅ PASS
+
+##### TC-198 — GET after delete
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-199 — Second delete
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-200 — Non-UUID id
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-201 — Unknown UUID
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+#### Business Rules — Expenses
+
+##### BR-28 — Discriminated union by `type`
+
+- **Rule:** `type` selects the shape — `one-time`/`recurring` take `amount` + optional dates; `installment` takes `amountPerInstallment`, `totalInstallments` (≥2), `paymentIntervalDays` (≥1), `firstPurchasedAt`. Missing/invalid `type` → `400`.
+- **Evidence:** TC-157/160/161, TC-167/168.
+- **Result:** ✅ PASS
+
+##### BR-29 — FK existence checks
+
+- **Rule:** unknown `budgetPeriodId`, `categoryId`, or `paymentTypeId` → `404`.
+- **Evidence:** TC-172, TC-173, TC-174.
+- **Result:** ✅ PASS
+
+##### BR-30 — `hasStatement` requires `bankId`
+
+- **Rule:** when the payment type has `hasStatement: true`, `bankId` is required — on create (TC-171) and when changing payment type on update (TC-191) → `400`.
+- **Result:** ✅ PASS
+
+##### BR-31 — Recurring creates a template
+
+- **Rule:** a `recurring` expense also creates a recurring-expense record (`startedAt` = period start).
+- **Evidence:** TC-160.
+- **Result:** ✅ PASS
+
+##### BR-32 — Installment period-spread
+
+- **Rule:** installments are spread across periods by due date (`firstPurchasedAt + (i-1)·intervalDays`). A due month with no active period is **skipped**; if **all** are missing → `400`.
+- **Evidence:** TC-161 (full), TC-162 (partial skip), TC-163 (all-missing → 400).
+- **Result:** ✅ PASS
+
+##### BR-33 — Past-period guard on update/delete only
+
+- **Rule:** update/delete of an expense in a past period → `422` (TC-195, TC-196). **Create is not blocked on past periods** — a one-time expense was created in a 2025 period (`201`). Asymmetry vs. budget-envelope (which blocks past create).
+- **Result:** ✅ PASS (noted)
+
+##### BR-34 — Pagination defaults & bounds
+
+- **Rule:** defaults `page: 1`, `limit: 20`; `limit` max 100 (`101` → `400`), `page` min 1 (`0` → `400`).
+- **Evidence:** TC-176, TC-179, TC-180, TC-181.
+- **Result:** ✅ PASS
+
+##### BR-35 — Soft delete hides records from reads
+
+- **Evidence:** TC-198 (`404` by id after delete).
+- **Result:** ✅ PASS
+
 ---
 
 ## 5. Results Matrix
@@ -1334,6 +1633,64 @@ Each subsection covers all test cases for a single API.
 | BR-26 | — | Soft delete hides reads | hidden | hidden | ✅ PASS |
 | BR-27 | — | No computed spend fields | n/a | confirmed | ℹ️ Note |
 
+### Expenses
+
+| ID | Method | Scenario | Expected | Actual | Status |
+|---|---|---|---|---|---|
+| TC-157 | `POST` | one-time minimal | `201` | `201` | ✅ PASS |
+| TC-158 | `POST` | one-time with dates (coercion) | `201` | `201` | ✅ PASS |
+| TC-159 | `POST` | one-time with bank + store | `201` | `201` | ✅ PASS |
+| TC-160 | `POST` | recurring (+ template) | `201` | `201` | ✅ PASS |
+| TC-161 | `POST` | installment (full spread) | `201` | `201` | ✅ PASS |
+| TC-162 | `POST` | installment partial (skip missing) | `201` | `201` | ✅ PASS |
+| TC-163 | `POST` | installment all-missing periods | `400` | `400` | ✅ PASS |
+| TC-164 | `POST` | `totalInstallments` = 1 | `400` | `400` | ✅ PASS |
+| TC-165 | `POST` | `paymentIntervalDays` = 0 | `400` | `400` | ✅ PASS |
+| TC-166 | `POST` | installment missing `totalInstallments` | `400` | `400` | ✅ PASS |
+| TC-167 | `POST` | missing `type` | `400` | `400` | ✅ PASS |
+| TC-168 | `POST` | invalid `type` | `400` | `400` | ✅ PASS |
+| TC-169 | `POST` | one-time missing `amount` | `400` | `400` | ✅ PASS |
+| TC-170 | `POST` | missing `categoryId` | `400` | `400` | ✅ PASS |
+| TC-171 | `POST` | `hasStatement` PT without bank | `400` | `400` | ✅ PASS |
+| TC-172 | `POST` | unknown `budgetPeriodId` | `404` | `404` | ✅ PASS |
+| TC-173 | `POST` | unknown `categoryId` | `404` | `404` | ✅ PASS |
+| TC-174 | `POST` | unknown `paymentTypeId` | `404` | `404` | ✅ PASS |
+| TC-175 | `POST` | `amount` = 0 | `400` | `400` | ✅ PASS |
+| TC-176 | `GET` | list shape & defaults | `200` `{data,total,page,limit}` | `200` | ✅ PASS |
+| TC-177 | `GET` | filtered by period | `200` | `200` | ✅ PASS |
+| TC-178 | `GET` | `?page&limit` | `200` | `200` | ✅ PASS |
+| TC-179 | `GET` | `?limit=100` (max) | `200` | `200` | ✅ PASS |
+| TC-180 | `GET` | `?limit=101` (> max) | `400` | `400` | ✅ PASS |
+| TC-181 | `GET` | `?page=0` (< min) | `400` | `400` | ✅ PASS |
+| TC-182 | `GET` | filter value non-UUID | `400` | `400` | ✅ PASS |
+| TC-183 | `GET /:id` | valid id | `200` | `200` | ✅ PASS |
+| TC-184 | `GET /:id` | non-UUID | `400` | `400` | ✅ PASS |
+| TC-185 | `GET /:id` | unknown UUID | `404` | `404` | ✅ PASS |
+| TC-186 | `PATCH /:id` | update amount + description | `200` | `200` | ✅ PASS |
+| TC-187 | `PATCH /:id` | clear `paidAt` (`null`) | `200` | `200` | ✅ PASS |
+| TC-188 | `PATCH /:id` | set `paidAt` date | `200` | `200` | ✅ PASS |
+| TC-189 | `PATCH /:id` | empty body `{}` | `400` | `400` | ✅ PASS |
+| TC-190 | `PATCH /:id` | `amount` = 0 | `400` | `400` | ✅ PASS |
+| TC-191 | `PATCH /:id` | change to `hasStatement` PT, no bank | `400` | `400` | ✅ PASS |
+| TC-192 | `PATCH /:id` | unknown `categoryId` | `404` | `404` | ✅ PASS |
+| TC-193 | `PATCH /:id` | non-UUID | `400` | `400` | ✅ PASS |
+| TC-194 | `PATCH /:id` | unknown UUID | `404` | `404` | ✅ PASS |
+| TC-195 | `PATCH /:id` | past-period expense | `422` | `422` | ✅ PASS |
+| TC-196 | `DELETE /:id` | past-period expense | `422` | `422` | ✅ PASS |
+| TC-197 | `DELETE /:id` | valid delete | `204` | `204` | ✅ PASS |
+| TC-198 | `DELETE /:id` | GET after delete | `404` | `404` | ✅ PASS |
+| TC-199 | `DELETE /:id` | second delete | `404` | `404` | ✅ PASS |
+| TC-200 | `DELETE /:id` | non-UUID | `400` | `400` | ✅ PASS |
+| TC-201 | `DELETE /:id` | unknown UUID | `404` | `404` | ✅ PASS |
+| BR-28 | `POST` | discriminated union by `type` | per-type | per-type | ✅ PASS |
+| BR-29 | `POST` | FK existence (period/category/PT) | `404` | `404` | ✅ PASS |
+| BR-30 | — | `hasStatement` requires `bankId` | `400` | `400` | ✅ PASS |
+| BR-31 | `POST` | recurring creates template | created | created | ✅ PASS |
+| BR-32 | `POST` | installment period-spread / skip / all-missing | per rule | per rule | ✅ PASS |
+| BR-33 | — | past-period guard (update/delete only) | `422` | `422` | ✅ PASS |
+| BR-34 | `GET` | pagination defaults & bounds | enforced | enforced | ✅ PASS |
+| BR-35 | — | soft delete hides reads | hidden | hidden | ✅ PASS |
+
 ---
 
 ## 6. Notes
@@ -1346,10 +1703,13 @@ Each subsection covers all test cases for a single API.
 - **Validation error shape:** `400` with Zod issues under `message` (array), plus `error` and `statusCode`.
 - **Not-found message:** `{ "message": "<Domain> with id <uuid> not found", "error": "Not Found", "statusCode": 404 }`.
 - **Budget-envelopes** carry only `allocatedAmount` — no `spentAmount` / `remainingAmount` / utilization. Spend must be aggregated client-side from expenses.
-- **Past-period guard:** budget envelopes cannot be created, updated, or deleted for a budget period earlier than the current month → `422`.
+- **Past-period guard:** budget envelopes cannot be created, updated, or deleted for a budget period earlier than the current month → `422`. **Expenses** apply the guard to update/delete only — creating an expense in a past period is allowed.
+- **Expense dates** (`purchasedAt`, `dueAt`, `paidAt`, installment `firstPurchasedAt`) accept date strings and are coerced to DateTime (#29); they serialize back as ISO DateTime (`...T00:00:00.000Z`).
+- **`GET /expenses` is paginated:** `{ data, total, page, limit }`, defaults `page: 1` / `limit: 20`, `limit` max 100.
+- **Installments spread across periods** by due date; a due month with no active budget period is silently skipped, and an installment with no matching period for any due date returns `400`.
 
 ---
 
 ## 7. Conclusion
 
-All endpoints and business rules for the lookup domains, budget-period, income, and budget-envelope pass. No open defects in the tested scope. Note for consumers: budget envelopes expose only `allocatedAmount` (no computed spend), and create/update/delete are blocked on past periods (`422`).
+All endpoints and business rules for the lookup domains, budget-period, income, budget-envelope, and expense pass. No open defects in the tested scope. Notable consumer-facing behaviours: budget envelopes expose only `allocatedAmount` (no computed spend); expense creation accepts past periods while update/delete do not (`422`); and installment expenses are spread across existing budget periods by due date (missing months are skipped). The only remaining untested endpoints are the expense-derived recurring-expense and installment-group management routes.
