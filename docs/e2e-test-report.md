@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Report title** | End-to-end API verification — lookup domains, budget-period, income |
+| **Report title** | End-to-end API verification — lookup domains, budget-period, income, budget-envelope |
 | **Date** | 2026-06-18 |
 | **Tester** | Ricardo (ricardo.guizi@invokemedia.com) |
 | **Build** | commit `386476b`, app version `0.0.1` |
@@ -24,8 +24,9 @@
 | **Stores** | Full lifecycle + business rules |
 | **Budget-periods** | `POST`, `GET` (list + by id), `DELETE` (no `PATCH` — periods are immutable) — plus `year`/`month` validation, duplicate-period rule, delete-with-linked-records guard, and the period-opening side effect |
 | **Income** | Full lifecycle — `POST`, `GET` (list + by id, `?budgetPeriodId` filter), `PATCH`, `DELETE` — plus monetary-amount rules, optional-field defaults, period-existence check, and empty-`PATCH` guard |
+| **Budget-envelopes** | Full lifecycle — `POST`, `GET` (list + by id, `?budgetPeriodId` filter), `PATCH`, `DELETE` — plus period/category existence, past-period guard, category-support rule, `(period, category)` uniqueness |
 
-**Out of scope:** remaining domains (budget-envelope, expense, recurring-expense, installment-group) and the business-scenario tests in `qa-postman-guide.md` Part 2.
+**Out of scope:** remaining domains (expense, recurring-expense, installment-group) and the business-scenario tests in `qa-postman-guide.md` Part 2.
 
 ---
 
@@ -903,6 +904,214 @@ Each subsection covers all test cases for a single API.
 - **Evidence:** TC-116.
 - **Result:** ✅ PASS
 
+### 4.7 — Budget-envelopes
+
+> Budget envelopes link a budget period to a category with an `allocatedAmount`. Create body: `{ budgetPeriodId, categoryId, allocatedAmount }`. `GET` supports a `?budgetPeriodId=` filter. Several business rules apply (period/category existence, past-period guard, category-must-support-envelopes, `(period, category)` uniqueness).
+
+#### `POST /budget-envelopes`
+
+##### TC-126 — Valid body
+
+- **Request body:** `{ "budgetPeriodId": "<future>", "categoryId": "<envelope-category>", "allocatedAmount": 1500.00 }`
+- **Expected / Actual:** `201` with the created envelope.
+- **Result:** ✅ PASS
+
+##### TC-127 — Duplicate `(period, category)`
+
+- **Expected / Actual:** `409 Conflict` (`"A budget envelope for this category already exists in the period"`).
+- **Result:** ✅ PASS
+
+##### TC-128 — Category does not support envelopes
+
+- **Setup:** category with `hasBudgetEnvelope: false`.
+- **Expected / Actual:** `400` (`"Category '<name>' does not support budget envelopes"`).
+- **Result:** ✅ PASS
+
+##### TC-129 — Past budget period
+
+- **Setup:** a period earlier than the current month.
+- **Expected / Actual:** `422` (`"Cannot create a budget envelope for a past budget period"`).
+- **Result:** ✅ PASS
+
+##### TC-130 — Unknown `budgetPeriodId`
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-131 — Unknown `categoryId`
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-132 — Missing `budgetPeriodId`
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-133 — Missing `categoryId`
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-134 — Missing `allocatedAmount`
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-135 — `budgetPeriodId` non-UUID
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-136 — `allocatedAmount` = 0
+
+- **Expected / Actual:** `400` (must be positive).
+- **Result:** ✅ PASS
+
+##### TC-137 — `allocatedAmount` > max
+
+- **Expected / Actual:** `400` (max `99,999,999.99`).
+- **Result:** ✅ PASS
+
+##### TC-138 — `allocatedAmount` with 3 decimals
+
+- **Expected / Actual:** `400` (max 2 decimals).
+- **Result:** ✅ PASS
+
+#### `GET /budget-envelopes`
+
+##### TC-139 — List all
+
+- **Expected / Actual:** `200` array.
+- **Result:** ✅ PASS
+
+##### TC-140 — List filtered `?budgetPeriodId=`
+
+- **Expected / Actual:** `200` array scoped to the period.
+- **Result:** ✅ PASS
+
+##### TC-141 — Filter value non-UUID
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+#### `GET /budget-envelopes/:id`
+
+##### TC-142 — Valid id
+
+- **Expected / Actual:** `200`.
+- **Result:** ✅ PASS
+
+##### TC-143 — Non-UUID id
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-144 — Unknown UUID
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+#### `PATCH /budget-envelopes/:id`
+
+##### TC-145 — Valid update `allocatedAmount`
+
+- **Expected / Actual:** `200`, amount updated, `updatedAt` bumped.
+- **Result:** ✅ PASS
+
+##### TC-146 — Empty body `{}`
+
+- **Expected / Actual:** `400` — `"At least one field must be provided"`.
+- **Result:** ✅ PASS
+
+##### TC-147 — `allocatedAmount` = 0
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-148 — Non-UUID id
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-149 — Unknown UUID
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-150 — Past-period envelope
+
+- **Expected / Actual:** `422` (`"Cannot update a budget envelope from a past budget period"`).
+- **Result:** ✅ PASS
+
+#### `DELETE /budget-envelopes/:id`
+
+##### TC-151 — Past-period envelope
+
+- **Expected / Actual:** `422` (`"Cannot delete a budget envelope from a past budget period"`).
+- **Result:** ✅ PASS
+
+##### TC-152 — Valid delete
+
+- **Expected / Actual:** `204` (soft delete) on a current/future-period envelope.
+- **Result:** ✅ PASS
+
+##### TC-153 — GET after delete
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-154 — Second delete
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+##### TC-155 — Non-UUID id
+
+- **Expected / Actual:** `400`.
+- **Result:** ✅ PASS
+
+##### TC-156 — Unknown UUID
+
+- **Expected / Actual:** `404`.
+- **Result:** ✅ PASS
+
+#### Business Rules — Budget-envelopes
+
+##### BR-22 — Create validates period & category existence
+
+- **Rule:** unknown `budgetPeriodId` or `categoryId` → `404`.
+- **Evidence:** TC-130, TC-131.
+- **Result:** ✅ PASS
+
+##### BR-23 — Category must support envelopes
+
+- **Rule:** category with `hasBudgetEnvelope: false` → `400`.
+- **Evidence:** TC-128.
+- **Result:** ✅ PASS
+
+##### BR-24 — `(period, category)` uniqueness
+
+- **Rule:** at most one active envelope per category per period → duplicate `409` (partial unique index + `P2002` handler).
+- **Evidence:** TC-127.
+- **Result:** ✅ PASS
+
+##### BR-25 — Past-period guard
+
+- **Rule:** create / update / delete of an envelope tied to a past period → `422`.
+- **Evidence:** TC-129 (create), TC-150 (update), TC-151 (delete).
+- **Result:** ✅ PASS
+
+##### BR-26 — Soft delete hides records from reads
+
+- **Evidence:** TC-153 (`404` by id after delete).
+- **Result:** ✅ PASS
+
+##### BR-27 — No computed spend fields
+
+- **Observation:** the envelope entity exposes only `allocatedAmount` — no `spentAmount`, `remainingAmount`, or utilization. Consumers must aggregate spend client-side from expenses (consistent with `qa-postman-guide.md` S4).
+- **Result:** ℹ️ Documented (not a defect).
+
 ---
 
 ## 5. Results Matrix
@@ -1083,6 +1292,48 @@ Each subsection covers all test cases for a single API.
 | BR-20 | — | Delete existence check | `404` | `404` | ✅ PASS |
 | BR-21 | `PATCH` | Empty body rejected | `400` | `400` | ✅ PASS |
 
+### Budget-envelopes
+
+| ID | Method | Scenario | Expected | Actual | Status |
+|---|---|---|---|---|---|
+| TC-126 | `POST` | Valid body | `201` | `201` | ✅ PASS |
+| TC-127 | `POST` | Duplicate `(period, category)` | `409` | `409` | ✅ PASS |
+| TC-128 | `POST` | Category without envelope support | `400` | `400` | ✅ PASS |
+| TC-129 | `POST` | Past budget period | `422` | `422` | ✅ PASS |
+| TC-130 | `POST` | Unknown `budgetPeriodId` | `404` | `404` | ✅ PASS |
+| TC-131 | `POST` | Unknown `categoryId` | `404` | `404` | ✅ PASS |
+| TC-132 | `POST` | Missing `budgetPeriodId` | `400` | `400` | ✅ PASS |
+| TC-133 | `POST` | Missing `categoryId` | `400` | `400` | ✅ PASS |
+| TC-134 | `POST` | Missing `allocatedAmount` | `400` | `400` | ✅ PASS |
+| TC-135 | `POST` | `budgetPeriodId` non-UUID | `400` | `400` | ✅ PASS |
+| TC-136 | `POST` | `allocatedAmount` = 0 | `400` | `400` | ✅ PASS |
+| TC-137 | `POST` | `allocatedAmount` > max | `400` | `400` | ✅ PASS |
+| TC-138 | `POST` | `allocatedAmount` 3 decimals | `400` | `400` | ✅ PASS |
+| TC-139 | `GET` | List all | `200` array | `200` | ✅ PASS |
+| TC-140 | `GET` | List filtered by period | `200` | `200` | ✅ PASS |
+| TC-141 | `GET` | Filter value non-UUID | `400` | `400` | ✅ PASS |
+| TC-142 | `GET /:id` | Valid id | `200` | `200` | ✅ PASS |
+| TC-143 | `GET /:id` | Non-UUID | `400` | `400` | ✅ PASS |
+| TC-144 | `GET /:id` | Unknown UUID | `404` | `404` | ✅ PASS |
+| TC-145 | `PATCH /:id` | Update `allocatedAmount` | `200` | `200` | ✅ PASS |
+| TC-146 | `PATCH /:id` | Empty body `{}` | `400` | `400` | ✅ PASS |
+| TC-147 | `PATCH /:id` | `allocatedAmount` = 0 | `400` | `400` | ✅ PASS |
+| TC-148 | `PATCH /:id` | Non-UUID | `400` | `400` | ✅ PASS |
+| TC-149 | `PATCH /:id` | Unknown UUID | `404` | `404` | ✅ PASS |
+| TC-150 | `PATCH /:id` | Past-period envelope | `422` | `422` | ✅ PASS |
+| TC-151 | `DELETE /:id` | Past-period envelope | `422` | `422` | ✅ PASS |
+| TC-152 | `DELETE /:id` | Valid delete | `204` | `204` | ✅ PASS |
+| TC-153 | `DELETE /:id` | GET after delete | `404` | `404` | ✅ PASS |
+| TC-154 | `DELETE /:id` | Second delete | `404` | `404` | ✅ PASS |
+| TC-155 | `DELETE /:id` | Non-UUID | `400` | `400` | ✅ PASS |
+| TC-156 | `DELETE /:id` | Unknown UUID | `404` | `404` | ✅ PASS |
+| BR-22 | `POST` | Period/category existence | `404` | `404` | ✅ PASS |
+| BR-23 | `POST` | Category must support envelopes | `400` | `400` | ✅ PASS |
+| BR-24 | `POST` | `(period, category)` uniqueness | `409` | `409` | ✅ PASS |
+| BR-25 | — | Past-period guard (create/update/delete) | `422` | `422` | ✅ PASS |
+| BR-26 | — | Soft delete hides reads | hidden | hidden | ✅ PASS |
+| BR-27 | — | No computed spend fields | n/a | confirmed | ℹ️ Note |
+
 ---
 
 ## 6. Notes
@@ -1094,9 +1345,11 @@ Each subsection covers all test cases for a single API.
 - **Opening a budget period has side effects:** it auto-creates budget envelopes (for `hasBudgetEnvelope` categories), recurring-expense entries, and due installments. A freshly-opened period may therefore already hold linked records and not be deletable.
 - **Validation error shape:** `400` with Zod issues under `message` (array), plus `error` and `statusCode`.
 - **Not-found message:** `{ "message": "<Domain> with id <uuid> not found", "error": "Not Found", "statusCode": 404 }`.
+- **Budget-envelopes** carry only `allocatedAmount` — no `spentAmount` / `remainingAmount` / utilization. Spend must be aggregated client-side from expenses.
+- **Past-period guard:** budget envelopes cannot be created, updated, or deleted for a budget period earlier than the current month → `422`.
 
 ---
 
 ## 7. Conclusion
 
-All endpoints and business rules for the lookup domains, the budget-period domain, and the income domain pass. No open defects in the tested scope.
+All endpoints and business rules for the lookup domains, budget-period, income, and budget-envelope pass. No open defects in the tested scope. Note for consumers: budget envelopes expose only `allocatedAmount` (no computed spend), and create/update/delete are blocked on past periods (`422`).
