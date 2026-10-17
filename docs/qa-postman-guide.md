@@ -14,9 +14,12 @@ Create a Postman Environment with these variables:
 | `budget_period_id` | *(fill after POST /budget-periods)* |
 | `budget_envelope_id` | *(fill after POST /budget-envelopes)* |
 | `income_id` | *(fill after POST /incomes)* |
-| `recurring_expense_id` | *(fill after GET /recurring-expenses)* |
-| `expense_id` | *(fill after POST /expenses)* |
+| `recurring_expense_id` | *(fill after GET /recurring-expenses — a `/recurring-expenses` record ID, not an expense ID)* |
+| `one_time_expense_id` | *(fill after POST /expenses, type `one-time`)* |
+| `recurring_linked_expense_id` | *(fill after POST /expenses, type `recurring` — the Expense `id`)* |
+| `installment_expense_id` | *(fill after POST /expenses, type `installment` — the Expense `id`)* |
 | `installment_group_id` | *(fill after POST installment expense)* |
+| `temp_lookup_id` | *(throwaway ID from the Step 2 POST — never reuse `bank_id`, `category_id`, etc.)* |
 
 All requests use header `Content-Type: application/json`.
 
@@ -102,12 +105,12 @@ Body:
   "name": "Test Bank"
 }
 ```
-Expected: `201` with the new bank object.
+Expected: `201` with the new bank object. Copy its `id` → `temp_lookup_id`.
 
 ### Update a Bank
 
 ```
-PATCH {{base_url}}/banks/{{bank_id}}
+PATCH {{base_url}}/banks/{{temp_lookup_id}}
 Body:
 {
   "name": "Updated Bank Name"
@@ -118,11 +121,11 @@ Expected: `200` updated object.
 ### Delete a Bank
 
 ```
-DELETE {{base_url}}/banks/{{bank_id}}
+DELETE {{base_url}}/banks/{{temp_lookup_id}}
 ```
-Expected: `204` no body. Use a throwaway ID, not the one needed downstream.
+Expected: `204` no body. Always use the throwaway ID from the POST above, never the `bank_id` captured in Step 1 (later expense requests need it).
 
-Repeat the same CRUD pattern for `/categories`, `/payment-types`, and `/stores`.
+Repeat the same CRUD pattern for `/categories`, `/payment-types`, and `/stores` — in each case POST a new record, capture its `id` into `temp_lookup_id`, and use that for the PATCH and DELETE.
 
 - **Categories** have an extra required boolean field `hasBudgetEnvelope`.
 - **Payment types** have an extra required boolean field `hasStatement`.
@@ -339,7 +342,7 @@ Body:
   "paidAt": "2026-04-10"
 }
 ```
-Expected: `201`. Copy `id` → `expense_id`.
+Expected: `201`. Copy `id` → `one_time_expense_id`.
 
 ### 6b — Recurring expense
 
@@ -353,12 +356,13 @@ Body:
   "budgetPeriodId": "{{budget_period_id}}",
   "categoryId": "{{category_id}}",
   "paymentTypeId": "{{payment_type_id}}",
+  "bankId": "{{bank_id}}",
   "description": "Netflix",
   "amount": 19.99,
   "purchasedAt": "2026-04-01"
 }
 ```
-Expected: `201`. After this, proceed to Step 7 to manage the recurring-expense record.
+Expected: `201`. Copy `id` → `recurring_linked_expense_id`. (`bankId` is required when the selected payment type has `hasStatement: true`; it may be omitted for a payment type with `hasStatement: false`.) After this, proceed to Step 7 to manage the recurring-expense record.
 
 ### 6c — Installment expense
 
@@ -380,7 +384,9 @@ Body:
   "firstPurchasedAt": "2026-04-01"
 }
 ```
-Expected: `201`. The response includes an `installmentGroupId` — copy it → `installment_group_id`.
+Expected: `201`. The response is the first installment Expense: copy its `id` → `installment_expense_id` and its `installmentGroupId` → `installment_group_id`.
+
+> **Budget periods:** installments are spread by due date, and any due month without a budget period is silently skipped (the request still returns `201`). To get all 12 expenses for Step 8, first create a budget period (`POST /budget-periods`) for every month the due dates fall in. With only April 2026 present, only the April installment exists.
 
 ### List (unfiltered, paginated)
 
@@ -398,13 +404,13 @@ GET {{base_url}}/expenses?budgetPeriodId={{budget_period_id}}&page=1&limit=10
 ### Get by ID
 
 ```
-GET {{base_url}}/expenses/{{expense_id}}
+GET {{base_url}}/expenses/{{one_time_expense_id}}
 ```
 
 ### Update
 
 ```
-PATCH {{base_url}}/expenses/{{expense_id}}
+PATCH {{base_url}}/expenses/{{one_time_expense_id}}
 Body:
 {
   "description": "Grocery run (updated)",
@@ -417,7 +423,7 @@ Expected: `200`.
 ### Update — clear an optional date field
 
 ```
-PATCH {{base_url}}/expenses/{{expense_id}}
+PATCH {{base_url}}/expenses/{{one_time_expense_id}}
 Body:
 {
   "paidAt": null
@@ -428,7 +434,7 @@ Expected: `200` with `paidAt: null`.
 ### Delete
 
 ```
-DELETE {{base_url}}/expenses/{{expense_id}}
+DELETE {{base_url}}/expenses/{{one_time_expense_id}}
 ```
 Expected: `204`.
 
@@ -696,7 +702,7 @@ GET {{base_url}}/expenses/{{one_time_expense_id}}
 ### S5b — GET a recurring expense
 
 ```
-GET {{base_url}}/expenses/{{recurring_expense_id}}
+GET {{base_url}}/expenses/{{recurring_linked_expense_id}}
 ```
 **Record all fields returned.** Specifically note:
 - Is `recurringExpenseId` present?
@@ -835,7 +841,7 @@ Body:
 ### S8b — Clear a bank from an existing expense
 
 ```
-PATCH {{base_url}}/expenses/{{expense_id}}
+PATCH {{base_url}}/expenses/{{one_time_expense_id}}
 Body:
 {
   "bankId": null

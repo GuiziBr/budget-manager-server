@@ -6,7 +6,7 @@
 |---|---|
 | **Report title** | End-to-end API verification — lookup domains, budget-period, income, budget-envelope, expense |
 | **Date** | 2026-06-18 |
-| **Tester** | Ricardo (ricardo.guizi@invokemedia.com) |
+| **Tester** | Ricardo |
 | **Build** | commit `386476b`, app version `0.0.1` |
 | **Environment** | Local — `http://localhost:3000`, PostgreSQL via Docker Compose |
 | **Tooling** | `curl` (direct HTTP against the running server) |
@@ -684,7 +684,8 @@ Each subsection covers all test cases for a single API.
 - **Rule:** creating a period does not just insert a row — it **opens** the period, auto-creating budget envelopes for every `hasBudgetEnvelope` category, recurring-expense entries active for that period, and any installments due in it.
 - **Steps:** create a category with `hasBudgetEnvelope: true` → `POST` a new period → query its envelopes.
 - **Actual:** `GET /budget-envelopes?budgetPeriodId=<new>` returned one envelope for the category (`allocatedAmount: 0`, since the category name is not in the seed amount map).
-- **Result:** ✅ PASS — note for consumers: a freshly-opened period may already contain envelopes/expenses, and is therefore not deletable (see BR-14).
+- **Evidence limit:** only the envelope auto-creation was read back; recurring-expense entries and due installments were not checked on the new period.
+- **Result:** ✅ PASS (envelopes only) — note for consumers: a freshly-opened period may already contain envelopes/expenses, and is therefore not deletable (see BR-14).
 
 ### 4.6 — Income
 
@@ -1148,7 +1149,7 @@ Each subsection covers all test cases for a single API.
 ##### TC-161 — Valid (spread across periods)
 
 - **Request body:** `{ "type": "installment", ...base, "amountPerInstallment", "totalInstallments": 2, "paymentIntervalDays": 30, "firstPurchasedAt" }` with periods existing for each due month.
-- **Expected / Actual:** `201`; returns the installment with `installmentGroupId` set and `installmentNumber: 1`.
+- **Expected / Actual:** `201`; returns the installment with `installmentGroupId` set and `installmentNumber: 1`. Only the first installment was inspected; the remaining installments were not read back.
 - **Result:** ✅ PASS
 
 ##### TC-162 — Partial: some due months lack a period
@@ -1392,7 +1393,7 @@ Each subsection covers all test cases for a single API.
 ##### BR-32 — Installment period-spread
 
 - **Rule:** installments are spread across periods by due date (`firstPurchasedAt + (i-1)·intervalDays`). A due month with no active period is **skipped**; if **all** are missing → `400`.
-- **Evidence:** TC-161 (full), TC-162 (partial skip), TC-163 (all-missing → 400).
+- **Evidence:** TC-161 (first installment returned, group set; full spread not read back), TC-162 (partial skip), TC-163 (all-missing → 400).
 - **Result:** ✅ PASS
 
 ##### BR-33 — Past-period guard on update/delete only
@@ -1545,7 +1546,7 @@ Each subsection covers all test cases for a single API.
 | BR-13 | `POST` | Duplicate `(year, month)` | `409` | `409` | ✅ PASS |
 | BR-14 | `DELETE` | Linked records present | `409` | `409` | ✅ PASS |
 | BR-15 | — | Soft delete hides reads | hidden | hidden | ✅ PASS |
-| BR-16 | `POST` | Opening side effect (envelopes/recurring/installments) | auto-created | auto-created | ✅ PASS |
+| BR-16 | `POST` | Opening side effect (envelopes verified; recurring/installments not read back) | envelopes auto-created | envelopes auto-created | ✅ PASS |
 
 ### Income
 
@@ -1641,7 +1642,7 @@ Each subsection covers all test cases for a single API.
 | TC-158 | `POST` | one-time with dates (coercion) | `201` | `201` | ✅ PASS |
 | TC-159 | `POST` | one-time with bank + store | `201` | `201` | ✅ PASS |
 | TC-160 | `POST` | recurring (+ template) | `201` | `201` | ✅ PASS |
-| TC-161 | `POST` | installment (full spread) | `201` | `201` | ✅ PASS |
+| TC-161 | `POST` | installment (first installment returned) | `201` | `201` | ✅ PASS |
 | TC-162 | `POST` | installment partial (skip missing) | `201` | `201` | ✅ PASS |
 | TC-163 | `POST` | installment all-missing periods | `400` | `400` | ✅ PASS |
 | TC-164 | `POST` | `totalInstallments` = 1 | `400` | `400` | ✅ PASS |
