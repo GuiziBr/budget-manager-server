@@ -20,8 +20,10 @@ NestJS backend for personal budget management. Supports monthly budget periods, 
 npm run start:dev       # start with watch mode
 npm run test            # run unit tests
 npm run test:cov        # run unit tests with coverage
-npm run lint            # lint and auto-fix with Biome
-npm run format          # format with Biome
+npm run lint            # lint with Biome (read-only)
+npm run check           # lint + format check with Biome (read-only)
+npm run fix             # lint + format and auto-fix with Biome
+npm run typecheck       # type-check with tsc (no emit)
 npm run migrate         # run Prisma migrations locally
 npm run docker:up       # start server + PostgreSQL via Docker Compose
 ```
