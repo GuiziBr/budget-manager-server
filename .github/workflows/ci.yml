@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
 
       - name: Secret Scanning
-        uses: trufflesecurity/trufflehog@v3.88.18
+        uses: trufflesecurity/trufflehog@v3.99.2
         with:
           extra_args: --only-verified
       - name: Set up Node.js
