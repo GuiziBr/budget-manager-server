@@ -5,6 +5,10 @@ import type { UpdateBankDTO } from "@/domains/bank/dtos/update-bank.dto"
 import type { Bank } from "@/domains/bank/entities/bank.entity"
 import { BankRepository } from "@/domains/bank/repositories/bank.repository"
 import { DatabaseService } from "@/infra/database/database.service"
+import {
+	activeRecurringFilter,
+	openPeriodFilter
+} from "@/infra/database/prisma/helpers/active-reference.filters"
 
 @Injectable()
 export class PrismaBankRepository extends BankRepository {
@@ -57,5 +61,30 @@ export class PrismaBankRepository extends BankRepository {
 			where: { id, deletedAt: null },
 			data: { deletedAt: new Date() }
 		})
+	}
+
+	async hasActiveReferences(
+		id: string,
+		currentYear: number,
+		currentMonth: number
+	): Promise<boolean> {
+		const [recurring, expense] = await Promise.all([
+			this.db.recurringExpense.findFirst({
+				where: {
+					bankId: id,
+					...activeRecurringFilter(currentYear, currentMonth)
+				},
+				select: { id: true }
+			}),
+			this.db.expense.findFirst({
+				where: {
+					bankId: id,
+					deletedAt: null,
+					budgetPeriod: openPeriodFilter(currentYear, currentMonth)
+				},
+				select: { id: true }
+			})
+		])
+		return recurring !== null || expense !== null
 	}
 }

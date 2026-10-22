@@ -9,4 +9,9 @@ export abstract class CategoryRepository {
 	abstract create(data: CreateCategoryDTO): Promise<Category>
 	abstract update(id: string, data: UpdateCategoryDTO): Promise<Category>
 	abstract delete(id: string): Promise<void>
+	abstract hasActiveReferences(
+		id: string,
+		currentYear: number,
+		currentMonth: number
+	): Promise<boolean>
 }

@@ -8,4 +8,9 @@ export abstract class PaymentTypeRepository {
 	abstract create(data: CreatePaymentTypeDTO): Promise<PaymentType>
 	abstract update(id: string, data: UpdatePaymentTypeDTO): Promise<PaymentType>
 	abstract delete(id: string): Promise<void>
+	abstract hasActiveReferences(
+		id: string,
+		currentYear: number,
+		currentMonth: number
+	): Promise<boolean>
 }

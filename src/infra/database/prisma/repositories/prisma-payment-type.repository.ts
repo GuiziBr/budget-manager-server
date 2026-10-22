@@ -5,6 +5,10 @@ import type { UpdatePaymentTypeDTO } from "@/domains/payment-type/dtos/update-pa
 import type { PaymentType } from "@/domains/payment-type/entities/payment-type.entity"
 import { PaymentTypeRepository } from "@/domains/payment-type/repositories/payment-type.repository"
 import { DatabaseService } from "@/infra/database/database.service"
+import {
+	activeRecurringFilter,
+	openPeriodFilter
+} from "@/infra/database/prisma/helpers/active-reference.filters"
 
 @Injectable()
 export class PrismaPaymentTypeRepository extends PaymentTypeRepository {
@@ -60,5 +64,30 @@ export class PrismaPaymentTypeRepository extends PaymentTypeRepository {
 			where: { id, deletedAt: null },
 			data: { deletedAt: new Date() }
 		})
+	}
+
+	async hasActiveReferences(
+		id: string,
+		currentYear: number,
+		currentMonth: number
+	): Promise<boolean> {
+		const [recurring, expense] = await Promise.all([
+			this.db.recurringExpense.findFirst({
+				where: {
+					paymentTypeId: id,
+					...activeRecurringFilter(currentYear, currentMonth)
+				},
+				select: { id: true }
+			}),
+			this.db.expense.findFirst({
+				where: {
+					paymentTypeId: id,
+					deletedAt: null,
+					budgetPeriod: openPeriodFilter(currentYear, currentMonth)
+				},
+				select: { id: true }
+			})
+		])
+		return recurring !== null || expense !== null
 	}
 }
