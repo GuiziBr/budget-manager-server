@@ -85,24 +85,6 @@ describe("InstallmentGroupService", () => {
 			)
 		})
 
-		it("should update totalInstallments without cascade", async () => {
-			vi.mocked(mockRepository.findById).mockResolvedValue(mockGroup)
-			const updated = { ...mockGroup, totalInstallments: 6 }
-			vi.mocked(mockRepository.update).mockResolvedValue(updated)
-
-			const result = await service.update("group-uuid-1", {
-				totalInstallments: 6
-			})
-
-			expect(result).toEqual(updated)
-			expect(mockRepository.update).toHaveBeenCalledWith(
-				"group-uuid-1",
-				{ totalInstallments: 6 },
-				expect.any(Number),
-				expect.any(Number)
-			)
-		})
-
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockGroup)
 			vi.mocked(mockRepository.update).mockRejectedValue(new Error("db error"))

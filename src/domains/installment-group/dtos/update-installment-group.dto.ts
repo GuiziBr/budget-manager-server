@@ -3,9 +3,9 @@ import { monetaryAmountSchema } from "@/shared/schemas/monetary-amount.schema"
 
 export const updateInstallmentGroupSchema = z
 	.object({
-		amountPerInstallment: monetaryAmountSchema.optional(),
-		totalInstallments: z.number().int().positive().optional()
+		amountPerInstallment: monetaryAmountSchema.optional()
 	})
+	.strict()
 	.superRefine((data, ctx) => {
 		if (Object.values(data).every((v) => v === undefined)) {
 			ctx.addIssue({

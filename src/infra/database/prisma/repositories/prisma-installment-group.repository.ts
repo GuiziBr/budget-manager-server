@@ -53,9 +53,6 @@ export class PrismaInstallmentGroupRepository extends InstallmentGroupRepository
 				data: {
 					...(data.amountPerInstallment !== undefined && {
 						amountPerInstallment: data.amountPerInstallment
-					}),
-					...(data.totalInstallments !== undefined && {
-						totalInstallments: data.totalInstallments
 					})
 				}
 			})

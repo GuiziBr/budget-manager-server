@@ -2,7 +2,6 @@ import type { InstallmentGroup } from "../entities/installment-group.entity"
 
 export type UpdateInstallmentGroupData = {
 	amountPerInstallment?: number
-	totalInstallments?: number
 }
 
 export abstract class InstallmentGroupRepository {
