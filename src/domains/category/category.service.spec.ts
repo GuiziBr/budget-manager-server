@@ -165,7 +165,9 @@ describe("CategoryService", () => {
 		it("should throw ConflictException when category has active references", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockCategory)
 			vi.mocked(mockRepository.hasActiveReferences).mockResolvedValue(true)
-			await expect(service.delete("uuid-1")).rejects.toThrow(ConflictException)
+			const result = service.delete("uuid-1")
+			await expect(result).rejects.toThrow(ConflictException)
+			await expect(result).rejects.toThrow(/budget envelopes/)
 			expect(mockRepository.delete).not.toHaveBeenCalled()
 		})
 

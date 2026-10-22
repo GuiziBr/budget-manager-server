@@ -88,7 +88,7 @@ export class CategoryService {
 			)
 			if (inUse) {
 				throw new ConflictException(
-					`Cannot delete category ${id}: it is referenced by active recurring expenses or expenses in the current or future budget periods`
+					`Cannot delete category ${id}: it is referenced by active recurring expenses, or by expenses or budget envelopes in the current or future budget periods`
 				)
 			}
 			await this.categoryRepository.delete(id)
