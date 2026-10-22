@@ -55,9 +55,10 @@ At least one field is required.
 
 ## DELETE /banks/:id
 
-Soft-deletes the bank. No check is made for expenses or recurring templates that reference it.
+Soft-deletes the bank. The request is rejected with `409` while it is referenced by an active recurring expense (not cancelled before the current UTC month) or by an expense in the current or a future budget period. Expenses in past periods do not block deletion and keep their reference for historical display.
 
 - **204** no body
 - **400** `id` is not a UUID
 - **404** bank not found
+- **409** bank is still actively referenced and cannot be deleted
 - **500**

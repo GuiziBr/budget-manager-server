@@ -58,9 +58,10 @@ At least one field is required. Changing `hasStatement` does not re-validate exi
 
 ## DELETE /payment-types/:id
 
-Soft-deletes the payment type. No check is made for expenses that reference it.
+Soft-deletes the payment type. The request is rejected with `409` while it is referenced by an active recurring expense (not cancelled before the current UTC month) or by an expense in the current or a future budget period. Expenses in past periods do not block deletion and keep their reference for historical display.
 
 - **204** no body
 - **400** `id` is not a UUID
 - **404** payment type not found
+- **409** payment type is still actively referenced and cannot be deleted
 - **500**

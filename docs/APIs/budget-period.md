@@ -39,7 +39,7 @@ Opens a new period. In a single transaction the API also generates the period's 
 
 | Field | Type | Required | Rules |
 |---|---|---|---|
-| `year` | integer | yes | `2000` ≤ year ≤ current UTC year + 1 (evaluated when the server starts) |
+| `year` | integer | yes | `2000` ≤ year ≤ current UTC year + 1 (evaluated on every request) |
 | `month` | integer | yes | 1–12 |
 
 ```json

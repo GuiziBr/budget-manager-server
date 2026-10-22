@@ -88,7 +88,7 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 3. **Should there be a `PATCH /installment-groups/:id` endpoint?** ✅ Resolved
 
-   **Decision:** Yes. `PATCH /installment-groups/:id` is the only way to change `amountPerInstallment` or `totalInstallments`. On update, the new `amountPerInstallment` is propagated to all non-deleted linked expense rows whose `budgetPeriod.year/month` is **≥ the current calendar month** — past rows are left untouched. `paymentIntervalDays` and `firstPurchaseDate` are immutable (changing them would require recomputing `dueDate` on all linked rows and potentially moving rows between budget periods).
+   **Decision:** Yes. `PATCH /installment-groups/:id` is the only way to change `amountPerInstallment`. *(Update: `totalInstallments` was originally also patchable, but it is now read-only — updating it never added or removed expense rows and left the group inconsistent; see issue #56.)* On update, the new `amountPerInstallment` is propagated to all non-deleted linked expense rows whose `budgetPeriod.year/month` is **≥ the current calendar month** — past rows are left untouched. `paymentIntervalDays` and `firstPurchaseDate` are immutable (changing them would require recomputing `dueDate` on all linked rows and potentially moving rows between budget periods).
 
    **Implementation:** Requires a full `InstallmentGroup` domain stack: `InstallmentGroupRepository` (abstract), `PrismaInstallmentGroupRepository`, `InstallmentGroupService`, `InstallmentGroupController`, `InstallmentGroupModule`. The Prisma repository update method bulk-updates linked expense rows filtered by their budget period's `year/month >= current month` in a single transaction.
 

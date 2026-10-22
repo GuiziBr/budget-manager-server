@@ -55,9 +55,10 @@ At least one field is required.
 
 ## DELETE /stores/:id
 
-Soft-deletes the store. No check is made for expenses or recurring templates that reference it.
+Soft-deletes the store. The request is rejected with `409` while it is referenced by an active recurring expense (not cancelled before the current UTC month) or by an expense in the current or a future budget period. Expenses in past periods do not block deletion and keep their reference for historical display.
 
 - **204** no body
 - **400** `id` is not a UUID
 - **404** store not found
+- **409** store is still actively referenced and cannot be deleted
 - **500**

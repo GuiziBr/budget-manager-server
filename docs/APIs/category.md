@@ -58,9 +58,10 @@ At least one field is required.
 
 ## DELETE /categories/:id
 
-Soft-deletes the category. No check is made for expenses, envelopes or recurring templates that reference it.
+Soft-deletes the category. The request is rejected with `409` while it is referenced by an active recurring expense (not cancelled before the current UTC month) or by an expense in the current or a future budget period. Expenses in past periods do not block deletion and keep their reference for historical display. Budget envelopes are not checked.
 
 - **204** no body
 - **400** `id` is not a UUID
 - **404** category not found
+- **409** category is still actively referenced and cannot be deleted
 - **500**
