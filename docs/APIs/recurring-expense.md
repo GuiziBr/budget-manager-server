@@ -13,7 +13,7 @@ Base route: `/recurring-expenses`. A recurring expense is a template that is cop
 | `storeId` | uuid \| null | |
 | `description` | string | |
 | `amount` | number | |
-| `startedAt` | date | first day of the month it was created in |
+| `startedAt` | date | first day (UTC) of the month of the `budgetPeriodId` selected in the `POST /expenses` request that created it |
 | `cancelledAt` | date \| null | `null` while active |
 | `createdAt` | date | |
 | `updatedAt` | date | |
@@ -45,8 +45,10 @@ List all templates (active, cancelled and future). No filtering or pagination.
 
 At least one field is required. Changes affect only periods opened afterwards; expenses already generated are not modified. `cancelledAt` cannot be set back to `null` through this endpoint.
 
+Example (the date is a placeholder: it must be on or after the first day of the current UTC month, so update it to a current or future date, otherwise the request returns `400`):
+
 ```json
-{ "cancelledAt": "2026-06-01" }
+{ "cancelledAt": "2026-12-01" }
 ```
 
 - **200** updated `RecurringExpense`
