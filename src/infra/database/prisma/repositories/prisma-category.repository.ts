@@ -77,7 +77,7 @@ export class PrismaCategoryRepository extends CategoryRepository {
 		currentYear: number,
 		currentMonth: number
 	): Promise<boolean> {
-		const [recurring, expense] = await Promise.all([
+		const [recurring, expense, envelope] = await Promise.all([
 			this.db.recurringExpense.findFirst({
 				where: {
 					categoryId: id,
@@ -92,8 +92,16 @@ export class PrismaCategoryRepository extends CategoryRepository {
 					budgetPeriod: openPeriodFilter(currentYear, currentMonth)
 				},
 				select: { id: true }
+			}),
+			this.db.budgetEnvelope.findFirst({
+				where: {
+					categoryId: id,
+					deletedAt: null,
+					budgetPeriod: openPeriodFilter(currentYear, currentMonth)
+				},
+				select: { id: true }
 			})
 		])
-		return recurring !== null || expense !== null
+		return recurring !== null || expense !== null || envelope !== null
 	}
 }
