@@ -4,9 +4,11 @@ import {
 	NotFoundException
 } from "@nestjs/common"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { BankService } from "@/domains/bank/bank.service"
 import type { BudgetPeriodService } from "@/domains/budget-period/budget-period.service"
 import type { CategoryService } from "@/domains/category/category.service"
 import type { PaymentTypeService } from "@/domains/payment-type/payment-type.service"
+import type { StoreService } from "@/domains/store/store.service"
 import { ExpenseType } from "./dtos/create-expense.dto"
 import type { Expense } from "./entities/expense.entity"
 import { ExpenseService } from "./expense.service"
@@ -64,6 +66,14 @@ const mockPaymentTypeService = {
 	findById: vi.fn()
 } as unknown as PaymentTypeService
 
+const mockBankService = {
+	findById: vi.fn()
+} as unknown as BankService
+
+const mockStoreService = {
+	findById: vi.fn()
+} as unknown as StoreService
+
 const mockPaymentTypeNoStatement = {
 	id: "payment-type-uuid-1",
 	hasStatement: false
@@ -78,11 +88,15 @@ describe("ExpenseService", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks()
+		vi.mocked(mockBankService.findById).mockReset()
+		vi.mocked(mockStoreService.findById).mockReset()
 		service = new ExpenseService(
 			mockRepository,
 			mockBudgetPeriodService,
 			mockCategoryService,
-			mockPaymentTypeService
+			mockPaymentTypeService,
+			mockBankService,
+			mockStoreService
 		)
 	})
 
@@ -183,6 +197,54 @@ describe("ExpenseService", () => {
 			)
 			await expect(service.create(dto)).rejects.toThrow(NotFoundException)
 			expect(mockRepository.create).not.toHaveBeenCalled()
+		})
+
+		it("should throw NotFoundException when bank not found", async () => {
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
+			vi.mocked(mockCategoryService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue(
+				mockPaymentTypeNoStatement as never
+			)
+			vi.mocked(mockBankService.findById).mockRejectedValue(
+				new NotFoundException("not found")
+			)
+			await expect(
+				service.create({ ...dto, bankId: "bank-uuid-1" })
+			).rejects.toThrow(NotFoundException)
+			expect(mockRepository.create).not.toHaveBeenCalled()
+		})
+
+		it("should throw NotFoundException when store not found", async () => {
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
+			vi.mocked(mockCategoryService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue(
+				mockPaymentTypeNoStatement as never
+			)
+			vi.mocked(mockStoreService.findById).mockRejectedValue(
+				new NotFoundException("not found")
+			)
+			await expect(
+				service.create({ ...dto, storeId: "store-uuid-1" })
+			).rejects.toThrow(NotFoundException)
+			expect(mockRepository.create).not.toHaveBeenCalled()
+		})
+
+		it("should not look up bank or store when not provided", async () => {
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
+			vi.mocked(mockCategoryService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue(
+				mockPaymentTypeNoStatement as never
+			)
+			vi.mocked(mockRepository.create).mockResolvedValue(mockExpense)
+			await service.create(dto)
+			expect(mockBankService.findById).not.toHaveBeenCalled()
+			expect(mockStoreService.findById).not.toHaveBeenCalled()
 		})
 
 		it("should throw BadRequestException when paymentType.hasStatement and no bankId", async () => {
@@ -380,6 +442,35 @@ describe("ExpenseService", () => {
 			const result = await service.update("expense-uuid-1", dto)
 			expect(result.description).toBe("Updated groceries")
 			expect(mockRepository.update).toHaveBeenCalledWith("expense-uuid-1", dto)
+		})
+
+		it("should throw NotFoundException when bank not found on update", async () => {
+			vi.mocked(mockRepository.findById).mockResolvedValue(mockExpense)
+			vi.mocked(mockBankService.findById).mockRejectedValue(
+				new NotFoundException("not found")
+			)
+			await expect(
+				service.update("expense-uuid-1", { bankId: "bank-uuid-1" })
+			).rejects.toThrow(NotFoundException)
+			expect(mockRepository.update).not.toHaveBeenCalled()
+		})
+
+		it("should throw NotFoundException when store not found on update", async () => {
+			vi.mocked(mockRepository.findById).mockResolvedValue(mockExpense)
+			vi.mocked(mockStoreService.findById).mockRejectedValue(
+				new NotFoundException("not found")
+			)
+			await expect(
+				service.update("expense-uuid-1", { storeId: "store-uuid-1" })
+			).rejects.toThrow(NotFoundException)
+			expect(mockRepository.update).not.toHaveBeenCalled()
+		})
+
+		it("should skip lookup when clearing bankId/storeId with null", async () => {
+			vi.mocked(mockRepository.findById).mockResolvedValue(mockExpense)
+			vi.mocked(mockRepository.update).mockResolvedValue(mockExpense)
+			await service.update("expense-uuid-1", { storeId: null })
+			expect(mockStoreService.findById).not.toHaveBeenCalled()
 		})
 
 		it("should update an expense from a past budget period", async () => {

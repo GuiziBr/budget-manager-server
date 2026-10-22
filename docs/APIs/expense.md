@@ -63,7 +63,7 @@ The body is a discriminated union on `type`. Fields shared by every type:
 | `storeId` | uuid \| null | no | |
 | `description` | string | yes | non-empty |
 
-`bankId` and `storeId` existence is not verified on this endpoint; an unknown ID results in `500`.
+When `bankId` or `storeId` is provided (non-null), the bank or store must exist and not be soft-deleted; otherwise the request fails with `404`.
 
 ### type `one-time`
 
@@ -115,7 +115,7 @@ Installments whose due date has no existing budget period are skipped for now; t
 
 - **201** the created `Expense` (see above for which one is returned for installments)
 - **400** validation failure; `bankId is required for this payment type`; or (installment) `No matching budget periods found for any installment due date`
-- **404** budget period, category or payment type not found
+- **404** budget period, category, payment type, bank or store not found
 - **500**
 
 ## PATCH /expenses/:id
@@ -138,7 +138,7 @@ At least one field is required. `budgetPeriodId` and `type` cannot be changed. I
 
 - **200** updated `Expense`
 - **400** validation failure, empty body, or `bankId is required for this payment type`
-- **404** expense, category or payment type not found
+- **404** expense, category, payment type, bank or store not found (`bankId` / `storeId` are only checked when non-null)
 - **500**
 
 ## DELETE /expenses/:id

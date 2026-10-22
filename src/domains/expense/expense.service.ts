@@ -6,9 +6,11 @@ import {
 	Logger,
 	NotFoundException
 } from "@nestjs/common"
+import { BankService } from "@/domains/bank/bank.service"
 import { BudgetPeriodService } from "@/domains/budget-period/budget-period.service"
 import { CategoryService } from "@/domains/category/category.service"
 import { PaymentTypeService } from "@/domains/payment-type/payment-type.service"
+import { StoreService } from "@/domains/store/store.service"
 import { type CreateExpenseDTO, ExpenseType } from "./dtos/create-expense.dto"
 import type { UpdateExpenseDTO } from "./dtos/update-expense.dto"
 import type { Expense } from "./entities/expense.entity"
@@ -25,7 +27,9 @@ export class ExpenseService {
 		private readonly expenseRepository: ExpenseRepository,
 		private readonly budgetPeriodService: BudgetPeriodService,
 		private readonly categoryService: CategoryService,
-		private readonly paymentTypeService: PaymentTypeService
+		private readonly paymentTypeService: PaymentTypeService,
+		private readonly bankService: BankService,
+		private readonly storeService: StoreService
 	) {}
 
 	async findAll(
@@ -68,6 +72,8 @@ export class ExpenseService {
 			const paymentType = await this.paymentTypeService.findById(
 				dto.paymentTypeId
 			)
+			if (dto.bankId) await this.bankService.findById(dto.bankId)
+			if (dto.storeId) await this.storeService.findById(dto.storeId)
 
 			if (paymentType.hasStatement && !dto.bankId) {
 				throw new BadRequestException(
@@ -175,6 +181,8 @@ export class ExpenseService {
 			if (dto.categoryId) {
 				await this.categoryService.findById(dto.categoryId)
 			}
+			if (dto.bankId) await this.bankService.findById(dto.bankId)
+			if (dto.storeId) await this.storeService.findById(dto.storeId)
 
 			const paymentTypeChanged = dto.paymentTypeId !== undefined
 			const bankIdCleared = dto.bankId === null

@@ -61,7 +61,7 @@ describe("InstallmentGroupController", () => {
 		it("should propagate NotFoundException from service", async () => {
 			vi.mocked(mockService.update).mockRejectedValue(new NotFoundException())
 			await expect(
-				controller.update("group-uuid-1", { totalInstallments: 6 })
+				controller.update("group-uuid-1", { amountPerInstallment: 250 })
 			).rejects.toThrow(NotFoundException)
 		})
 	})

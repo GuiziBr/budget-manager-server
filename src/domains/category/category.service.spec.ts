@@ -23,7 +23,8 @@ const mockRepository: CategoryRepository = {
 	findAllWithBudgetEnvelope: vi.fn(),
 	create: vi.fn(),
 	update: vi.fn(),
-	delete: vi.fn()
+	delete: vi.fn(),
+	hasActiveReferences: vi.fn()
 }
 
 describe("CategoryService", () => {
@@ -156,8 +157,18 @@ describe("CategoryService", () => {
 		it("should delete the category", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockCategory)
 			vi.mocked(mockRepository.delete).mockResolvedValue(undefined)
+			vi.mocked(mockRepository.hasActiveReferences).mockResolvedValue(false)
 			await service.delete("uuid-1")
 			expect(mockRepository.delete).toHaveBeenCalledWith("uuid-1")
+		})
+
+		it("should throw ConflictException when category has active references", async () => {
+			vi.mocked(mockRepository.findById).mockResolvedValue(mockCategory)
+			vi.mocked(mockRepository.hasActiveReferences).mockResolvedValue(true)
+			const result = service.delete("uuid-1")
+			await expect(result).rejects.toThrow(ConflictException)
+			await expect(result).rejects.toThrow(/budget envelopes/)
+			expect(mockRepository.delete).not.toHaveBeenCalled()
 		})
 
 		it("should throw NotFoundException when category not found", async () => {
@@ -169,6 +180,7 @@ describe("CategoryService", () => {
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockCategory)
+			vi.mocked(mockRepository.hasActiveReferences).mockResolvedValue(false)
 			vi.mocked(mockRepository.delete).mockRejectedValue(new Error("DB down"))
 			await expect(service.delete("uuid-1")).rejects.toThrow(
 				InternalServerErrorException

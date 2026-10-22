@@ -5,6 +5,10 @@ import type { UpdateStoreDTO } from "@/domains/store/dtos/update-store.dto"
 import type { Store } from "@/domains/store/entities/store.entity"
 import { StoreRepository } from "@/domains/store/repositories/store.repository"
 import { DatabaseService } from "@/infra/database/database.service"
+import {
+	activeRecurringFilter,
+	openPeriodFilter
+} from "@/infra/database/prisma/helpers/active-reference.filters"
 
 @Injectable()
 export class PrismaStoreRepository extends StoreRepository {
@@ -60,5 +64,30 @@ export class PrismaStoreRepository extends StoreRepository {
 			where: { id, deletedAt: null },
 			data: { deletedAt: new Date() }
 		})
+	}
+
+	async hasActiveReferences(
+		id: string,
+		currentYear: number,
+		currentMonth: number
+	): Promise<boolean> {
+		const [recurring, expense] = await Promise.all([
+			this.db.recurringExpense.findFirst({
+				where: {
+					storeId: id,
+					...activeRecurringFilter(currentYear, currentMonth)
+				},
+				select: { id: true }
+			}),
+			this.db.expense.findFirst({
+				where: {
+					storeId: id,
+					deletedAt: null,
+					budgetPeriod: openPeriodFilter(currentYear, currentMonth)
+				},
+				select: { id: true }
+			})
+		])
+		return recurring !== null || expense !== null
 	}
 }

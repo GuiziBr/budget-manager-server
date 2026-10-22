@@ -5,6 +5,10 @@ import type { UpdateCategoryDTO } from "@/domains/category/dtos/update-category.
 import type { Category } from "@/domains/category/entities/category.entity"
 import { CategoryRepository } from "@/domains/category/repositories/category.repository"
 import { DatabaseService } from "@/infra/database/database.service"
+import {
+	activeRecurringFilter,
+	openPeriodFilter
+} from "@/infra/database/prisma/helpers/active-reference.filters"
 
 @Injectable()
 export class PrismaCategoryRepository extends CategoryRepository {
@@ -66,5 +70,38 @@ export class PrismaCategoryRepository extends CategoryRepository {
 			where: { id, deletedAt: null },
 			data: { deletedAt: new Date() }
 		})
+	}
+
+	async hasActiveReferences(
+		id: string,
+		currentYear: number,
+		currentMonth: number
+	): Promise<boolean> {
+		const [recurring, expense, envelope] = await Promise.all([
+			this.db.recurringExpense.findFirst({
+				where: {
+					categoryId: id,
+					...activeRecurringFilter(currentYear, currentMonth)
+				},
+				select: { id: true }
+			}),
+			this.db.expense.findFirst({
+				where: {
+					categoryId: id,
+					deletedAt: null,
+					budgetPeriod: openPeriodFilter(currentYear, currentMonth)
+				},
+				select: { id: true }
+			}),
+			this.db.budgetEnvelope.findFirst({
+				where: {
+					categoryId: id,
+					deletedAt: null,
+					budgetPeriod: openPeriodFilter(currentYear, currentMonth)
+				},
+				select: { id: true }
+			})
+		])
+		return recurring !== null || expense !== null || envelope !== null
 	}
 }

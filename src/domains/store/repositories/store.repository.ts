@@ -8,4 +8,9 @@ export abstract class StoreRepository {
 	abstract create(data: CreateStoreDTO): Promise<Store>
 	abstract update(id: string, data: UpdateStoreDTO): Promise<Store>
 	abstract delete(id: string): Promise<void>
+	abstract hasActiveReferences(
+		id: string,
+		currentYear: number,
+		currentMonth: number
+	): Promise<boolean>
 }

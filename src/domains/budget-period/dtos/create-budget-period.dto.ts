@@ -5,7 +5,9 @@ export const createBudgetPeriodSchema = z.object({
 		.number()
 		.int()
 		.min(2000)
-		.max(new Date().getUTCFullYear() + 1),
+		.refine((year) => year <= new Date().getUTCFullYear() + 1, {
+			message: "Year cannot be later than next year"
+		}),
 	month: z.number().int().min(1).max(12)
 })
 
