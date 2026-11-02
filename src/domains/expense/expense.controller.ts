@@ -17,9 +17,13 @@ import {
 } from "./dtos/create-expense.dto"
 import { expenseParamSchema } from "./dtos/expense-param.dto"
 import {
+	type ExpenseSortByQueryDTO,
+	type ExpenseSortOrderQueryDTO,
 	expenseBudgetPeriodIdQuerySchema,
 	expenseLimitQuerySchema,
-	expensePageQuerySchema
+	expensePageQuerySchema,
+	expenseSortByQuerySchema,
+	expenseSortOrderQuerySchema
 } from "./dtos/expense-query.dto"
 import {
 	type UpdateExpenseDTO,
@@ -41,9 +45,25 @@ export class ExpenseController {
 		budgetPeriodId?: string,
 		@Query("page", new ZodValidationPipe(expensePageQuerySchema)) page?: number,
 		@Query("limit", new ZodValidationPipe(expenseLimitQuerySchema))
-		limit?: number
-	): Promise<{ data: Expense[]; total: number; page: number; limit: number }> {
-		return this.expenseService.findAll({ budgetPeriodId, page, limit })
+		limit?: number,
+		@Query("sortBy", new ZodValidationPipe(expenseSortByQuerySchema))
+		sortBy?: ExpenseSortByQueryDTO,
+		@Query("sortOrder", new ZodValidationPipe(expenseSortOrderQuerySchema))
+		sortOrder?: ExpenseSortOrderQueryDTO
+	): Promise<{
+		data: Expense[]
+		total: number
+		totalAmount: number
+		page: number
+		limit: number
+	}> {
+		return this.expenseService.findAll({
+			budgetPeriodId,
+			page,
+			limit,
+			sortBy,
+			sortOrder
+		})
 	}
 
 	@Get(":id")

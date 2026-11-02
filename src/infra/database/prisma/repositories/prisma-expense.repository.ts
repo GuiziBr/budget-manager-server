@@ -31,6 +31,13 @@ type PrismaExpenseRow = {
 	deletedAt: Date | null
 }
 
+const NULLABLE_SORT_FIELDS = new Set<string>([
+	"purchasedAt",
+	"dueAt",
+	"paidAt",
+	"installmentNumber"
+])
+
 @Injectable()
 export class PrismaExpenseRepository extends ExpenseRepository {
 	constructor(private readonly db: DatabaseService) {
@@ -46,25 +53,41 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 
 	async findAll(
 		filters: ExpenseFilters
-	): Promise<{ data: Expense[]; total: number }> {
-		const { budgetPeriodId, page = 1, limit = 20 } = filters
+	): Promise<{ data: Expense[]; total: number; totalAmount: number }> {
+		const {
+			budgetPeriodId,
+			page = 1,
+			limit = 20,
+			sortBy = "createdAt",
+			sortOrder = "desc"
+		} = filters
 		const skip = (page - 1) * limit
 		const where = {
 			deletedAt: null,
 			...(budgetPeriodId ? { budgetPeriodId } : {})
 		}
 
-		const [rows, total] = await this.db.$transaction([
+		const orderBy = NULLABLE_SORT_FIELDS.has(sortBy)
+			? { [sortBy]: { sort: sortOrder, nulls: "last" as const } }
+			: { [sortBy]: sortOrder }
+
+		const [rows, total, aggregate] = await this.db.$transaction([
 			this.db.expense.findMany({
 				where,
 				skip,
 				take: limit,
-				orderBy: { createdAt: "desc" }
+				// id tiebreaker keeps offset pagination stable across duplicate values
+				orderBy: [orderBy, { id: sortOrder }]
 			}),
-			this.db.expense.count({ where })
+			this.db.expense.count({ where }),
+			this.db.expense.aggregate({ where, _sum: { amount: true } })
 		])
 
-		return { data: rows.map((r) => this.mapToExpense(r)), total }
+		return {
+			data: rows.map((r) => this.mapToExpense(r)),
+			total,
+			totalAmount: aggregate._sum.amount?.toNumber() ?? 0
+		}
 	}
 
 	async findById(id: string): Promise<Expense | null> {

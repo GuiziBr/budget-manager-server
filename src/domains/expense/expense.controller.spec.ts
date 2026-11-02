@@ -42,25 +42,47 @@ describe("ExpenseController", () => {
 
 	describe("findAll", () => {
 		it("should delegate to service.findAll with filters", async () => {
-			const response = { data: [mockExpense], total: 1, page: 1, limit: 20 }
+			const response = {
+				data: [mockExpense],
+				total: 1,
+				totalAmount: 10,
+				page: 1,
+				limit: 20
+			}
 			vi.mocked(mockService.findAll).mockResolvedValue(response)
-			const result = await controller.findAll("period-uuid-1", 1, 20)
+			const result = await controller.findAll(
+				"period-uuid-1",
+				1,
+				20,
+				"amount",
+				"asc"
+			)
 			expect(result).toEqual(response)
 			expect(mockService.findAll).toHaveBeenCalledWith({
 				budgetPeriodId: "period-uuid-1",
 				page: 1,
-				limit: 20
+				limit: 20,
+				sortBy: "amount",
+				sortOrder: "asc"
 			})
 		})
 
 		it("should delegate with undefined filters when not provided", async () => {
-			const response = { data: [], total: 0, page: 1, limit: 20 }
+			const response = {
+				data: [],
+				total: 0,
+				totalAmount: 0,
+				page: 1,
+				limit: 20
+			}
 			vi.mocked(mockService.findAll).mockResolvedValue(response)
 			await controller.findAll()
 			expect(mockService.findAll).toHaveBeenCalledWith({
 				budgetPeriodId: undefined,
 				page: undefined,
-				limit: undefined
+				limit: undefined,
+				sortBy: undefined,
+				sortOrder: undefined
 			})
 		})
 	})

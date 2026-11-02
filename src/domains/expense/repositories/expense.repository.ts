@@ -1,9 +1,15 @@
+import type {
+	ExpenseSortByQueryDTO,
+	ExpenseSortOrderQueryDTO
+} from "../dtos/expense-query.dto"
 import type { Expense } from "../entities/expense.entity"
 
 export type ExpenseFilters = {
 	budgetPeriodId?: string
 	page?: number
 	limit?: number
+	sortBy?: NonNullable<ExpenseSortByQueryDTO>
+	sortOrder?: NonNullable<ExpenseSortOrderQueryDTO>
 }
 
 export type CreateExpenseData = {
@@ -65,7 +71,7 @@ export type UpdateExpenseData = {
 export abstract class ExpenseRepository {
 	abstract findAll(
 		filters: ExpenseFilters
-	): Promise<{ data: Expense[]; total: number }>
+	): Promise<{ data: Expense[]; total: number; totalAmount: number }>
 	abstract findById(id: string): Promise<Expense | null>
 	abstract create(data: CreateExpenseData): Promise<Expense>
 	abstract createWithRecurringTemplate(
