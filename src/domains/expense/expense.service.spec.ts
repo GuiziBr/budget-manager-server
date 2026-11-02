@@ -104,11 +104,13 @@ describe("ExpenseService", () => {
 		it("should return paginated expenses", async () => {
 			vi.mocked(mockRepository.findAll).mockResolvedValue({
 				data: [mockExpense],
-				total: 1
+				total: 1,
+				totalAmount: 25.5
 			})
 			const result = await service.findAll({})
 			expect(result.data).toEqual([mockExpense])
 			expect(result.total).toBe(1)
+			expect(result.totalAmount).toBe(25.5)
 			expect(result.page).toBe(1)
 			expect(result.limit).toBe(20)
 		})
@@ -116,11 +118,36 @@ describe("ExpenseService", () => {
 		it("should forward budgetPeriodId filter to repository", async () => {
 			vi.mocked(mockRepository.findAll).mockResolvedValue({
 				data: [mockExpense],
-				total: 1
+				total: 1,
+				totalAmount: 25.5
 			})
 			await service.findAll({ budgetPeriodId: "period-uuid-1" })
 			expect(mockRepository.findAll).toHaveBeenCalledWith(
 				expect.objectContaining({ budgetPeriodId: "period-uuid-1" })
+			)
+		})
+
+		it("should default sorting to createdAt desc", async () => {
+			vi.mocked(mockRepository.findAll).mockResolvedValue({
+				data: [],
+				total: 0,
+				totalAmount: 0
+			})
+			await service.findAll({})
+			expect(mockRepository.findAll).toHaveBeenCalledWith(
+				expect.objectContaining({ sortBy: "createdAt", sortOrder: "desc" })
+			)
+		})
+
+		it("should forward sortBy and sortOrder to repository", async () => {
+			vi.mocked(mockRepository.findAll).mockResolvedValue({
+				data: [],
+				total: 0,
+				totalAmount: 0
+			})
+			await service.findAll({ sortBy: "amount", sortOrder: "asc" })
+			expect(mockRepository.findAll).toHaveBeenCalledWith(
+				expect.objectContaining({ sortBy: "amount", sortOrder: "asc" })
 			)
 		})
 

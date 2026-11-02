@@ -32,18 +32,26 @@ export class ExpenseService {
 		private readonly storeService: StoreService
 	) {}
 
-	async findAll(
-		filters: ExpenseFilters
-	): Promise<{ data: Expense[]; total: number; page: number; limit: number }> {
+	async findAll(filters: ExpenseFilters): Promise<{
+		data: Expense[]
+		total: number
+		totalAmount: number
+		page: number
+		limit: number
+	}> {
 		this.logger.debug("Fetching all expenses")
 		try {
-			const { budgetPeriodId, page = 1, limit = 20 } = filters
-			const { data, total } = await this.expenseRepository.findAll({
+			const {
 				budgetPeriodId,
-				page,
-				limit
-			})
-			return { data, total, page, limit }
+				page = 1,
+				limit = 20,
+				sortBy = "createdAt",
+				sortOrder = "desc"
+			} = filters
+			const { data, total, totalAmount } = await this.expenseRepository.findAll(
+				{ budgetPeriodId, page, limit, sortBy, sortOrder }
+			)
+			return { data, total, totalAmount, page, limit }
 		} catch (error) {
 			this.logger.error("Failed to fetch expenses", error)
 			throw new InternalServerErrorException()
