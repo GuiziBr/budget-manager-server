@@ -3,7 +3,7 @@ services:
     image: postgres:16.2-alpine3.19
     container_name: budget-manager-db
     ports:
-      - '5432:5432'
+      - '5433:5432'
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=admin
@@ -16,9 +16,12 @@ services:
       context: .
     command: npm run start:dev
     ports:
-      - '3000:3000'
+      - '3002:3000'
     environment:
       - DATABASE_URL=postgresql://admin:admin@db:5432/budget-manager?schema=public
+      - EXPENSE_API_URL=${EXPENSE_API_URL}
+      - EXPENSE_API_KEY=${EXPENSE_API_KEY}
+      - EXPENSE_API_USER_ID=${EXPENSE_API_USER_ID}
     volumes:
       - ./:/server
       - /server/node_modules

@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common"
 import type { Expense } from "@/domains/expense/entities/expense.entity"
+import { calculateMonthsRunning } from "@/domains/expense/months-running"
 import {
 	type CreateExpenseData,
 	type CreateInstallmentExpenseData,
@@ -10,6 +11,26 @@ import {
 	type UpdateExpenseData
 } from "@/domains/expense/repositories/expense.repository"
 import { DatabaseService } from "@/infra/database/database.service"
+
+// Relations are included without a `deletedAt` filter on purpose: expenses
+// keep pointing at lookups (category, bank...) that were soft-deleted later,
+// and their names must still resolve.
+const EXPENSE_INCLUDE = {
+	category: { select: { id: true, name: true } },
+	paymentType: { select: { id: true, name: true } },
+	bank: { select: { id: true, name: true } },
+	store: { select: { id: true, name: true } },
+	installmentGroup: {
+		select: {
+			id: true,
+			totalInstallments: true,
+			paymentIntervalDays: true,
+			firstPurchasedAt: true
+		}
+	},
+	recurringExpense: { select: { monthsAlreadyPaid: true, startedAt: true } },
+	budgetPeriod: { select: { year: true, month: true } }
+} as const
 
 type PrismaExpenseRow = {
 	id: string
@@ -29,6 +50,18 @@ type PrismaExpenseRow = {
 	createdAt: Date
 	updatedAt: Date
 	deletedAt: Date | null
+	category: { id: string; name: string }
+	paymentType: { id: string; name: string }
+	bank: { id: string; name: string } | null
+	store: { id: string; name: string } | null
+	installmentGroup: {
+		id: string
+		totalInstallments: number
+		paymentIntervalDays: number
+		firstPurchasedAt: Date
+	} | null
+	recurringExpense: { monthsAlreadyPaid: number; startedAt: Date } | null
+	budgetPeriod: { year: number; month: number }
 }
 
 const NULLABLE_SORT_FIELDS = new Set<string>([
@@ -45,9 +78,40 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 	}
 
 	private mapToExpense(row: PrismaExpenseRow): Expense {
+		const {
+			category,
+			paymentType,
+			bank,
+			store,
+			installmentGroup,
+			recurringExpense,
+			budgetPeriod,
+			// replaced by the nested objects, which carry the same ids
+			categoryId: _categoryId,
+			paymentTypeId: _paymentTypeId,
+			bankId: _bankId,
+			storeId: _storeId,
+			installmentGroupId: _installmentGroupId,
+			...expense
+		} = row
 		return {
-			...row,
-			amount: row.amount.toNumber()
+			...expense,
+			amount: expense.amount.toNumber(),
+			category,
+			paymentType,
+			bank,
+			store,
+			installment: installmentGroup
+				? {
+						id: installmentGroup.id,
+						totalInstallments: installmentGroup.totalInstallments,
+						paymentIntervalDays: installmentGroup.paymentIntervalDays,
+						firstPurchasedAt: installmentGroup.firstPurchasedAt
+					}
+				: null,
+			monthsRunning: recurringExpense
+				? calculateMonthsRunning(recurringExpense, budgetPeriod)
+				: null
 		}
 	}
 
@@ -77,7 +141,8 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 				skip,
 				take: limit,
 				// id tiebreaker keeps offset pagination stable across duplicate values
-				orderBy: [orderBy, { id: sortOrder }]
+				orderBy: [orderBy, { id: sortOrder }],
+				include: EXPENSE_INCLUDE
 			}),
 			this.db.expense.count({ where }),
 			this.db.expense.aggregate({ where, _sum: { amount: true } })
@@ -92,14 +157,18 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 
 	async findById(id: string): Promise<Expense | null> {
 		const row = await this.db.expense.findFirst({
-			where: { id, deletedAt: null }
+			where: { id, deletedAt: null },
+			include: EXPENSE_INCLUDE
 		})
 		if (!row) return null
 		return this.mapToExpense(row)
 	}
 
 	async create(data: CreateExpenseData): Promise<Expense> {
-		const row = await this.db.expense.create({ data })
+		const row = await this.db.expense.create({
+			data,
+			include: EXPENSE_INCLUDE
+		})
 		return this.mapToExpense(row)
 	}
 
@@ -112,7 +181,8 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 				data: recurringData
 			})
 			const row = await tx.expense.create({
-				data: { ...expenseData, recurringExpenseId: recurring.id }
+				data: { ...expenseData, recurringExpenseId: recurring.id },
+				include: EXPENSE_INCLUDE
 			})
 
 			// Backfill rows for budget periods that were opened before this
@@ -160,7 +230,10 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 			const group = await tx.installmentGroup.create({ data: groupData })
 			const rows = await Promise.all(
 				expenses.map((e) =>
-					tx.expense.create({ data: { ...e, installmentGroupId: group.id } })
+					tx.expense.create({
+						data: { ...e, installmentGroupId: group.id },
+						include: EXPENSE_INCLUDE
+					})
 				)
 			)
 			return rows.map((r) => this.mapToExpense(r))
@@ -170,7 +243,8 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 	async update(id: string, data: UpdateExpenseData): Promise<Expense> {
 		const row = await this.db.expense.update({
 			where: { id, deletedAt: null },
-			data
+			data,
+			include: EXPENSE_INCLUDE
 		})
 		return this.mapToExpense(row)
 	}

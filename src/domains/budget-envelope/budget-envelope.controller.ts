@@ -22,7 +22,10 @@ import {
 	type UpdateBudgetEnvelopeDTO,
 	updateBudgetEnvelopeSchema
 } from "./dtos/update-budget-envelope.dto"
-import type { BudgetEnvelope } from "./entities/budget-envelope.entity"
+import type {
+	BudgetEnvelope,
+	BudgetEnvelopeWithSpend
+} from "./entities/budget-envelope.entity"
 
 const budgetPeriodIdQuerySchema = z.uuid().optional()
 
@@ -34,14 +37,14 @@ export class BudgetEnvelopeController {
 	findAll(
 		@Query("budgetPeriodId", new ZodValidationPipe(budgetPeriodIdQuerySchema))
 		budgetPeriodId?: string
-	): Promise<BudgetEnvelope[]> {
+	): Promise<BudgetEnvelopeWithSpend[]> {
 		return this.budgetEnvelopeService.findAll(budgetPeriodId)
 	}
 
 	@Get(":id")
 	findById(
 		@Param("id", new ZodValidationPipe(budgetEnvelopeParamSchema)) id: string
-	): Promise<BudgetEnvelope> {
+	): Promise<BudgetEnvelopeWithSpend> {
 		return this.budgetEnvelopeService.findById(id)
 	}
 
@@ -49,7 +52,7 @@ export class BudgetEnvelopeController {
 	create(
 		@Body(new ZodValidationPipe(createBudgetEnvelopeSchema))
 		dto: CreateBudgetEnvelopeDTO
-	): Promise<BudgetEnvelope> {
+	): Promise<BudgetEnvelopeWithSpend> {
 		return this.budgetEnvelopeService.create(dto)
 	}
 

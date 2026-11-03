@@ -1,11 +1,18 @@
+export class ExpenseLookup {
+	id: string
+	name: string
+}
+
+export class ExpenseInstallment {
+	id: string
+	totalInstallments: number
+	paymentIntervalDays: number
+	firstPurchasedAt: Date
+}
+
 export class Expense {
 	id: string
 	budgetPeriodId: string
-	categoryId: string
-	paymentTypeId: string
-	bankId: string | null
-	storeId: string | null
-	installmentGroupId: string | null
 	recurringExpenseId: string | null
 	description: string
 	installmentNumber: number | null
@@ -13,6 +20,12 @@ export class Expense {
 	dueAt: Date | null
 	paidAt: Date | null
 	amount: number
+	category: ExpenseLookup
+	paymentType: ExpenseLookup
+	bank: ExpenseLookup | null
+	store: ExpenseLookup | null
+	installment: ExpenseInstallment | null
+	monthsRunning: number | null
 	createdAt: Date
 	updatedAt: Date
 	deletedAt: Date | null

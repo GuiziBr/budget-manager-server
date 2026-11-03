@@ -14,6 +14,9 @@ jobs:
     env:
       PORT: 3000
       DATABASE_URL: postgresql://admin:admin@budget-manager-db:5432/expenses?schema=public
+      EXPENSE_API_URL: http://localhost:4000
+      EXPENSE_API_KEY: ci-api-key
+      EXPENSE_API_USER_ID: 00000000-0000-4000-8000-000000000000
 
     steps:
       - name: Checkout code
