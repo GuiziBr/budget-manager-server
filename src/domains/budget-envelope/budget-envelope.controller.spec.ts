@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { BudgetEnvelopeController } from "./budget-envelope.controller"
 import type { BudgetEnvelopeService } from "./budget-envelope.service"
-import type { BudgetEnvelope } from "./entities/budget-envelope.entity"
+import type {
+	BudgetEnvelope,
+	BudgetEnvelopeWithSpend
+} from "./entities/budget-envelope.entity"
 
 const mockEnvelope: BudgetEnvelope = {
 	id: "envelope-uuid",
@@ -11,6 +14,12 @@ const mockEnvelope: BudgetEnvelope = {
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	deletedAt: null
+}
+
+const mockEnvelopeWithSpend: BudgetEnvelopeWithSpend = {
+	...mockEnvelope,
+	spentAmount: 245.18,
+	spendUpdatedAt: new Date()
 }
 
 const mockService: BudgetEnvelopeService = {
@@ -31,14 +40,14 @@ describe("BudgetEnvelopeController", () => {
 
 	describe("findAll", () => {
 		it("should delegate to service.findAll without filter", async () => {
-			vi.mocked(mockService.findAll).mockResolvedValue([mockEnvelope])
+			vi.mocked(mockService.findAll).mockResolvedValue([mockEnvelopeWithSpend])
 			const result = await controller.findAll()
-			expect(result).toEqual([mockEnvelope])
+			expect(result).toEqual([mockEnvelopeWithSpend])
 			expect(mockService.findAll).toHaveBeenCalledWith(undefined)
 		})
 
 		it("should delegate to service.findAll with budgetPeriodId", async () => {
-			vi.mocked(mockService.findAll).mockResolvedValue([mockEnvelope])
+			vi.mocked(mockService.findAll).mockResolvedValue([mockEnvelopeWithSpend])
 			await controller.findAll("period-uuid")
 			expect(mockService.findAll).toHaveBeenCalledWith("period-uuid")
 		})
@@ -46,9 +55,9 @@ describe("BudgetEnvelopeController", () => {
 
 	describe("findById", () => {
 		it("should delegate to service.findById with the given id", async () => {
-			vi.mocked(mockService.findById).mockResolvedValue(mockEnvelope)
+			vi.mocked(mockService.findById).mockResolvedValue(mockEnvelopeWithSpend)
 			const result = await controller.findById("envelope-uuid")
-			expect(result).toEqual(mockEnvelope)
+			expect(result).toEqual(mockEnvelopeWithSpend)
 			expect(mockService.findById).toHaveBeenCalledWith("envelope-uuid")
 		})
 	})
@@ -60,9 +69,9 @@ describe("BudgetEnvelopeController", () => {
 				categoryId: "category-uuid",
 				allocatedAmount: 500
 			}
-			vi.mocked(mockService.create).mockResolvedValue(mockEnvelope)
+			vi.mocked(mockService.create).mockResolvedValue(mockEnvelopeWithSpend)
 			const result = await controller.create(dto)
-			expect(result).toEqual(mockEnvelope)
+			expect(result).toEqual(mockEnvelopeWithSpend)
 			expect(mockService.create).toHaveBeenCalledWith(dto)
 		})
 	})

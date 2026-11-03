@@ -5,6 +5,7 @@ export const updateBudgetEnvelopeSchema = z
 	.object({
 		allocatedAmount: monetaryAmountSchema.optional()
 	})
+	.strict()
 	.superRefine((data, ctx) => {
 		if (Object.values(data).every((v) => v === undefined)) {
 			ctx.addIssue({

@@ -12,6 +12,7 @@ import type { Category } from "@/domains/category/entities/category.entity"
 import { BudgetEnvelopeService } from "./budget-envelope.service"
 import type { BudgetEnvelope } from "./entities/budget-envelope.entity"
 import type { BudgetEnvelopeRepository } from "./repositories/budget-envelope.repository"
+import type { EnvelopeSpendRepository } from "./repositories/envelope-spend.repository"
 
 const now = new Date()
 const currentYear = now.getUTCFullYear()
@@ -77,6 +78,12 @@ const mockCategoryService: CategoryService = {
 	findById: vi.fn()
 } as unknown as CategoryService
 
+const mockSpendRepository: EnvelopeSpendRepository = {
+	findByMonth: vi.fn()
+}
+
+const spentCategoryAmounts = new Map([["category-uuid", 245.18]])
+
 describe("BudgetEnvelopeService", () => {
 	let service: BudgetEnvelopeService
 
@@ -85,7 +92,14 @@ describe("BudgetEnvelopeService", () => {
 		service = new BudgetEnvelopeService(
 			mockRepository,
 			mockBudgetPeriodService,
-			mockCategoryService
+			mockCategoryService,
+			mockSpendRepository
+		)
+		vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+			mockBudgetPeriod
+		)
+		vi.mocked(mockSpendRepository.findByMonth).mockResolvedValue(
+			spentCategoryAmounts
 		)
 	})
 
@@ -93,7 +107,13 @@ describe("BudgetEnvelopeService", () => {
 		it("should return all envelopes", async () => {
 			vi.mocked(mockRepository.findAll).mockResolvedValue([mockEnvelope])
 			const result = await service.findAll()
-			expect(result).toEqual([mockEnvelope])
+			expect(result).toEqual([
+				{
+					...mockEnvelope,
+					spentAmount: 245.18,
+					spendUpdatedAt: expect.any(Date)
+				}
+			])
 			expect(mockRepository.findAll).toHaveBeenCalledWith(undefined)
 		})
 
@@ -115,7 +135,11 @@ describe("BudgetEnvelopeService", () => {
 		it("should return the envelope when found", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockEnvelope)
 			const result = await service.findById("envelope-uuid")
-			expect(result).toEqual(mockEnvelope)
+			expect(result).toEqual({
+				...mockEnvelope,
+				spentAmount: 245.18,
+				spendUpdatedAt: expect.any(Date)
+			})
 		})
 
 		it("should throw NotFoundException when not found", async () => {
@@ -133,6 +157,153 @@ describe("BudgetEnvelopeService", () => {
 		})
 	})
 
+	describe("envelope spend", () => {
+		const parkingEnvelope: BudgetEnvelope = {
+			...mockEnvelope,
+			id: "envelope-parking-uuid",
+			categoryId: "category-parking-uuid"
+		}
+
+		it("should return 0 when the category is missing from the response", async () => {
+			vi.mocked(mockRepository.findAll).mockResolvedValue([parkingEnvelope])
+			const [result] = await service.findAll("period-uuid")
+			expect(result.spentAmount).toBe(0)
+			expect(result.spendUpdatedAt).toBeInstanceOf(Date)
+		})
+
+		it("should clamp a negative spend at 0", async () => {
+			vi.mocked(mockSpendRepository.findByMonth).mockResolvedValue(
+				new Map([["category-uuid", -12.5]])
+			)
+			vi.mocked(mockRepository.findAll).mockResolvedValue([mockEnvelope])
+			const [result] = await service.findAll("period-uuid")
+			expect(result.spentAmount).toBe(0)
+		})
+
+		it("should call the spend API once for many envelopes of one period", async () => {
+			vi.mocked(mockRepository.findAll).mockResolvedValue([
+				mockEnvelope,
+				parkingEnvelope
+			])
+			const result = await service.findAll("period-uuid")
+			expect(result.map((e) => e.spentAmount)).toEqual([245.18, 0])
+			expect(mockSpendRepository.findByMonth).toHaveBeenCalledTimes(1)
+			expect(mockSpendRepository.findByMonth).toHaveBeenCalledWith(
+				currentYear,
+				currentMonth
+			)
+		})
+
+		it("should call the spend API once per distinct period", async () => {
+			const otherPeriodEnvelope: BudgetEnvelope = {
+				...mockEnvelope,
+				id: "envelope-other-uuid",
+				budgetPeriodId: "period-past-uuid"
+			}
+			vi.mocked(mockBudgetPeriodService.findById).mockImplementation(
+				async (id: string) =>
+					id === "period-past-uuid" ? pastBudgetPeriod : mockBudgetPeriod
+			)
+			vi.mocked(mockRepository.findAll).mockResolvedValue([
+				mockEnvelope,
+				otherPeriodEnvelope
+			])
+			await service.findAll()
+			expect(mockSpendRepository.findByMonth).toHaveBeenCalledTimes(2)
+			expect(mockSpendRepository.findByMonth).toHaveBeenCalledWith(2020, 1)
+		})
+
+		it("should return null spend and keep the allocation when the API fails", async () => {
+			vi.mocked(mockSpendRepository.findByMonth).mockRejectedValue(
+				new Error("timeout")
+			)
+			vi.mocked(mockRepository.findAll).mockResolvedValue([
+				mockEnvelope,
+				parkingEnvelope
+			])
+			const result = await service.findAll("period-uuid")
+			expect(result).toHaveLength(2)
+			for (const envelope of result) {
+				expect(envelope.spentAmount).toBeNull()
+				expect(envelope.spendUpdatedAt).toBeNull()
+				expect(envelope.allocatedAmount).toBe(500)
+			}
+		})
+
+		it("should not cache a failed call", async () => {
+			vi.mocked(mockSpendRepository.findByMonth)
+				.mockRejectedValueOnce(new Error("timeout"))
+				.mockResolvedValueOnce(spentCategoryAmounts)
+			vi.mocked(mockRepository.findAll).mockResolvedValue([mockEnvelope])
+			const [first] = await service.findAll("period-uuid")
+			const [second] = await service.findAll("period-uuid")
+			expect(first.spentAmount).toBeNull()
+			expect(second.spentAmount).toBe(245.18)
+		})
+
+		it("should reuse the cached spend of an open period within the TTL", async () => {
+			vi.mocked(mockRepository.findAll).mockResolvedValue([mockEnvelope])
+			await service.findAll("period-uuid")
+			await service.findAll("period-uuid")
+			expect(mockSpendRepository.findByMonth).toHaveBeenCalledTimes(1)
+		})
+
+		it("should refetch the spend of an open period after the TTL", async () => {
+			vi.useFakeTimers()
+			try {
+				vi.mocked(mockRepository.findAll).mockResolvedValue([mockEnvelope])
+				await service.findAll("period-uuid")
+				vi.advanceTimersByTime(61_000)
+				await service.findAll("period-uuid")
+				expect(mockSpendRepository.findByMonth).toHaveBeenCalledTimes(2)
+			} finally {
+				vi.useRealTimers()
+			}
+		})
+
+		it("should cache the spend of a past period forever", async () => {
+			vi.useFakeTimers()
+			try {
+				vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+					pastBudgetPeriod
+				)
+				vi.mocked(mockRepository.findAll).mockResolvedValue([mockEnvelope])
+				await service.findAll("period-past-uuid")
+				vi.advanceTimersByTime(24 * 60 * 60 * 1000)
+				await service.findAll("period-past-uuid")
+				expect(mockSpendRepository.findByMonth).toHaveBeenCalledTimes(1)
+			} finally {
+				vi.useRealTimers()
+			}
+		})
+
+		it("should return a future period spend (not 0 by default)", async () => {
+			const futurePeriod: BudgetPeriod = {
+				...mockBudgetPeriod,
+				id: "period-future-uuid",
+				year: currentYear + 1
+			}
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				futurePeriod
+			)
+			vi.mocked(mockRepository.findAll).mockResolvedValue([mockEnvelope])
+			const [result] = await service.findAll("period-future-uuid")
+			expect(result.spentAmount).toBe(245.18)
+			expect(mockSpendRepository.findByMonth).toHaveBeenCalledWith(
+				currentYear + 1,
+				currentMonth
+			)
+		})
+
+		it("should not call the spend API on update or delete", async () => {
+			vi.mocked(mockRepository.findById).mockResolvedValue(mockEnvelope)
+			vi.mocked(mockRepository.update).mockResolvedValue(mockEnvelope)
+			await service.update("envelope-uuid", { allocatedAmount: 600 })
+			await service.delete("envelope-uuid")
+			expect(mockSpendRepository.findByMonth).not.toHaveBeenCalled()
+		})
+	})
+
 	describe("create", () => {
 		it("should create and return a budget envelope", async () => {
 			const dto = {
@@ -146,7 +317,11 @@ describe("BudgetEnvelopeService", () => {
 			vi.mocked(mockCategoryService.findById).mockResolvedValue(mockCategory)
 			vi.mocked(mockRepository.create).mockResolvedValue(mockEnvelope)
 			const result = await service.create(dto)
-			expect(result).toEqual(mockEnvelope)
+			expect(result).toEqual({
+				...mockEnvelope,
+				spentAmount: 245.18,
+				spendUpdatedAt: expect.any(Date)
+			})
 			expect(mockRepository.create).toHaveBeenCalledWith(dto)
 		})
 
