@@ -31,6 +31,7 @@ const mockRecurringExpense: RecurringExpense = {
 	amount: 15.99,
 	startedAt: new Date(),
 	cancelledAt: null,
+	monthsAlreadyPaid: 0,
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	deletedAt: null

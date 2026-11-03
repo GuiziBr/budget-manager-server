@@ -33,6 +33,7 @@ export type CreateRecurringTemplateData = {
 	description: string
 	amount: number
 	startedAt: Date
+	monthsAlreadyPaid: number
 }
 
 export type CreateInstallmentGroupData = {

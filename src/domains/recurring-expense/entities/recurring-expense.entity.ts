@@ -8,6 +8,7 @@ export class RecurringExpense {
 	amount: number
 	startedAt: Date
 	cancelledAt: Date | null
+	monthsAlreadyPaid: number
 	createdAt: Date
 	updatedAt: Date
 	deletedAt: Date | null

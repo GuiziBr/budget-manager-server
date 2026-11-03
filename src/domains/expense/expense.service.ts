@@ -97,7 +97,7 @@ export class ExpenseService {
 			}
 
 			if (dto.type === ExpenseType.RECURRING) {
-				const { type: _, ...fields } = dto
+				const { type: _, monthsAlreadyPaid, ...fields } = dto
 				const startedAt = new Date(Date.UTC(period.year, period.month - 1, 1))
 				const expense =
 					await this.expenseRepository.createWithRecurringTemplate(fields, {
@@ -107,7 +107,8 @@ export class ExpenseService {
 						storeId: fields.storeId ?? null,
 						description: fields.description,
 						amount: fields.amount,
-						startedAt
+						startedAt,
+						monthsAlreadyPaid: monthsAlreadyPaid ?? 0
 					})
 				this.logger.log(`Created ${dto.type} expense ${expense.id}`)
 				return expense
@@ -198,9 +199,9 @@ export class ExpenseService {
 			if (paymentTypeChanged || bankIdCleared) {
 				const paymentType = paymentTypeChanged
 					? await this.paymentTypeService.findById(dto.paymentTypeId as string)
-					: await this.paymentTypeService.findById(expense.paymentTypeId)
+					: await this.paymentTypeService.findById(expense.paymentType.id)
 				const resolvedBankId =
-					dto.bankId !== undefined ? dto.bankId : expense.bankId
+					dto.bankId !== undefined ? dto.bankId : (expense.bank?.id ?? null)
 				if (paymentType.hasStatement && !resolvedBankId) {
 					throw new BadRequestException(
 						"bankId is required for this payment type"

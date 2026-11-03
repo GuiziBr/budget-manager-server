@@ -33,6 +33,7 @@ export const createExpenseSchema = z.discriminatedUnion("type", [
 		type: z.literal(ExpenseType.RECURRING),
 		...baseExpenseFields,
 		amount: monetaryAmountSchema,
+		monthsAlreadyPaid: z.number().int().min(0).optional(),
 		...dateFields
 	}),
 	z.object({

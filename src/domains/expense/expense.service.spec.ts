@@ -26,11 +26,6 @@ const currentPeriod = () => {
 const mockExpense: Expense = {
 	id: "expense-uuid-1",
 	budgetPeriodId: "period-uuid-current",
-	categoryId: "category-uuid-1",
-	paymentTypeId: "payment-type-uuid-1",
-	bankId: null,
-	storeId: null,
-	installmentGroupId: null,
 	recurringExpenseId: null,
 	description: "Groceries",
 	installmentNumber: null,
@@ -38,6 +33,12 @@ const mockExpense: Expense = {
 	dueAt: null,
 	paidAt: null,
 	amount: 150,
+	category: { id: "category-uuid-1", name: "Groceries" },
+	paymentType: { id: "payment-type-uuid-1", name: "Credit card" },
+	bank: null,
+	store: null,
+	installment: null,
+	monthsRunning: null,
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	deletedAt: null
@@ -350,8 +351,32 @@ describe("ExpenseService", () => {
 			)
 			expect(mockRepository.createWithRecurringTemplate).toHaveBeenCalledWith(
 				expect.objectContaining({ description: "Netflix", amount: 20 }),
-				expect.objectContaining({ startedAt: expectedStartedAt })
+				expect.objectContaining({
+					startedAt: expectedStartedAt,
+					monthsAlreadyPaid: 0
+				})
 			)
+		})
+
+		it("should pass monthsAlreadyPaid to the template and not to the expense", async () => {
+			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
+				currentPeriod() as never
+			)
+			vi.mocked(mockCategoryService.findById).mockResolvedValue({} as never)
+			vi.mocked(mockPaymentTypeService.findById).mockResolvedValue(
+				mockPaymentTypeNoStatement as never
+			)
+			vi.mocked(mockRepository.createWithRecurringTemplate).mockResolvedValue(
+				mockExpense
+			)
+
+			await service.create({ ...dto, monthsAlreadyPaid: 10 })
+
+			const [expenseData, templateData] = vi.mocked(
+				mockRepository.createWithRecurringTemplate
+			).mock.calls[0]
+			expect(templateData.monthsAlreadyPaid).toBe(10)
+			expect(expenseData).not.toHaveProperty("monthsAlreadyPaid")
 		})
 	})
 
@@ -554,7 +579,10 @@ describe("ExpenseService", () => {
 		})
 
 		it("should allow switching to statement payment type when expense already has bankId", async () => {
-			const expenseWithBank = { ...mockExpense, bankId: "bank-uuid-1" }
+			const expenseWithBank = {
+				...mockExpense,
+				bank: { id: "bank-uuid-1", name: "Bank" }
+			}
 			vi.mocked(mockRepository.findById).mockResolvedValue(expenseWithBank)
 			vi.mocked(mockBudgetPeriodService.findById).mockResolvedValue(
 				currentPeriod() as never
