@@ -160,7 +160,6 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 			where: { id, deletedAt: null },
 			include: EXPENSE_INCLUDE
 		})
-		console.log(row)
 		if (!row) return null
 		return this.mapToExpense(row)
 	}
