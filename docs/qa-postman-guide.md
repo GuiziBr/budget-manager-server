@@ -36,7 +36,7 @@ All requests use header `Content-Type: application/json`.
 6. POST /expenses (recurring)                           ← creates recurring-expense record
 7. GET  /recurring-expenses                             ← capture recurring_expense_id
 8. POST /expenses (installment)                         ← creates installment-group record
-9. GET  /installment-groups/:id                         ← use installmentGroupId from step 8
+9. GET  /installment-groups/:id                         ← use installment.id from step 8
 ```
 
 ---
@@ -397,7 +397,7 @@ Body:
   "firstPurchasedAt": "2026-04-01"
 }
 ```
-Expected: `201`. The response is the first installment Expense: copy its `id` → `installment_expense_id` and its `installmentGroupId` → `installment_group_id`.
+Expected: `201`. The response is the first installment Expense: copy its `id` → `installment_expense_id` and its `installment.id` → `installment_group_id`.
 
 > **Budget periods:** installments are spread by due date, and any due month without a budget period is silently skipped (the request still returns `201`). To get all 12 expenses for Step 8, first create a budget period (`POST /budget-periods`) for every month the due dates fall in. With only April 2026 present, only the April installment exists.
 
@@ -743,7 +743,7 @@ GET {{base_url}}/expenses/{{recurring_linked_expense_id}}
 GET {{base_url}}/expenses/{{installment_expense_id}}
 ```
 **Record all fields returned.** Specifically note:
-- Is `installmentGroupId` present?
+- Is the nested `installment` object (with `id`) present, and the flat `installmentGroupId` absent?
 - Is `amountPerInstallment` present?
 - Is `totalInstallments` or `installmentNumber` present?
 

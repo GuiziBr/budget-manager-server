@@ -83,7 +83,7 @@ Returning a `5xx` for the whole list would take the Envelopes card down because 
 - *Given* a Groceries envelope in November 2026 and the external API reporting 245.18 for it, *when* I call `GET /budget-envelopes?budgetPeriodId=…`, *then* the envelope has `spentAmount: 245.18` and a `spendUpdatedAt`.
 - *Given* the external API is down, *then* the response is `200`, every `spentAmount` is `null`, and `allocatedAmount` is unchanged.
 - *Given* the external response has no entry for the Parking category, *then* the Parking envelope has `spentAmount: 0`.
-- *Given* an envelope list request, *then* the external API is called once, whatever the number of envelopes.
+- *Given* an envelope list request, *then* the external API is called once per distinct budget period in the response (so once for the Month screen's call filtered by `budgetPeriodId`), whatever the number of envelopes.
 - *Given* a Groceries purchase of 80.00 made on 20 November 2026 on a credit card whose due date is the 15th, *then* it counts in the December 2026 envelope's `spentAmount` and not in November's.
 - *Given* a future period with no attributed purchases, *then* `spentAmount` is `0`.
 - *Given* an envelope in a past period, *then* `spentAmount` is the month's final figure.
@@ -145,6 +145,8 @@ Return the names with each expense, including when the lookup is soft-deleted:
 | `bankName` | string \| null | `null` when `bankId` is `null` |
 | `storeName` | string \| null | `null` when `storeId` is `null` |
 
+**Implemented as:** nested objects instead of flat name fields: `category: { id, name }`, `paymentType: { id, name }`, `bank: { id, name } | null`, `store: { id, name } | null`. The flat `categoryId`, `paymentTypeId`, `bankId` and `storeId` are no longer returned in responses. See `docs/APIs/expense.md`.
+
 Applies to the same four expense responses as BE-B. The names are read-only. The lookup endpoints themselves don't change: the forms still offer only active records.
 
 (Alternative: let the lookup list endpoints accept `includeDeleted=true`. Names on the expense are preferred: no extra request and no change to the lookups.)
@@ -187,7 +189,7 @@ Applies to the same four expense responses as BE-B.
 
 ## 6. Compatibility and rollout
 
-- All changes are **additive**: new response fields, no field removed or renamed, no request that worked before stops working.
+- All changes are **additive**: new response fields, no request that worked before stops working. The one exception is BE-C: as implemented, expense responses return the lookups as nested `{ id, name }` objects (`category`, `paymentType`, `bank`, `store`) and `installment.id`, and drop the flat `categoryId`, `paymentTypeId`, `bankId`, `storeId` and `installmentGroupId` response fields, which the nested objects now carry. Request bodies still use the flat ids. This is a deliberate breaking change to the expense response shape, accepted because the frontend is still in development.
 - The frontend types mark every new field as optional until the backend ships it, and falls back to today's behaviour when a field is absent. Each can be released independently, in any order.
 - Suggested order: **BE-A** first (completes T-05's totals and the Envelopes card), then BE-B (fewest requests), then BE-C and BE-D.
 
