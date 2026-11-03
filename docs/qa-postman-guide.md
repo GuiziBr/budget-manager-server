@@ -201,7 +201,7 @@ Body:
   "allocatedAmount": 1500.00
 }
 ```
-Expected: `201`. Copy `id` → `budget_envelope_id`.
+Expected: `201`. Copy `id` → `budget_envelope_id`. The body includes the read-only `spentAmount` and `spendUpdatedAt` (see "Envelope spend" below).
 
 ### List (unfiltered)
 
@@ -214,7 +214,7 @@ GET {{base_url}}/budget-envelopes
 ```
 GET {{base_url}}/budget-envelopes?budgetPeriodId={{budget_period_id}}
 ```
-Expected: `200` array containing only envelopes for that period.
+Expected: `200` array containing only envelopes for that period. Each envelope has `spentAmount` and `spendUpdatedAt`.
 
 ### Get by ID
 
@@ -247,6 +247,18 @@ Expected: `204`.
 | `PATCH` with `{}` | `400` (at least one field required) |
 | `POST` with `allocatedAmount: 0` | `400` (must be positive) |
 | `POST` with `allocatedAmount: 100000000` | `400` (exceeds max) |
+| `POST` or `PATCH` with `spentAmount` or `spendUpdatedAt` in the body | `400` (read-only, unknown field) |
+
+### Envelope spend
+
+`spentAmount` comes from the expense server (`GET /balance/envelopes/:year/:month`, Postman: *Expenses Server → Balance → Get Envelope Balance*). It needs `EXPENSE_API_URL`, `EXPENSE_API_KEY` and `EXPENSE_API_USER_ID` in this server's `.env`. The external `id` must equal our category `id`, and the external amounts are in cents (this API returns currency units).
+
+| Scenario | Expected |
+|---|---|
+| `GET /budget-envelopes?budgetPeriodId=...` with the expense server up | every envelope has `spentAmount` (number, never negative) and `spendUpdatedAt`; a category missing from the external response gives `0` |
+| Repeat the same request within 60 s (current or future period) | same `spendUpdatedAt`, no new external call. Past periods are cached for good |
+| Stop the expense server, then list | still `200`; `spentAmount: null` and `spendUpdatedAt: null`; `allocatedAmount` unchanged |
+| `PATCH` / `DELETE` an envelope | no external call; `PATCH` response has no spend fields |
 
 ---
 
@@ -359,10 +371,11 @@ Body:
   "bankId": "{{bank_id}}",
   "description": "Netflix",
   "amount": 19.99,
-  "purchasedAt": "2026-04-01"
+  "purchasedAt": "2026-04-01",
+  "monthsAlreadyPaid": 10
 }
 ```
-Expected: `201`. Copy `id` → `recurring_linked_expense_id`. (`bankId` is required when the selected payment type has `hasStatement: true`; it may be omitted for a payment type with `hasStatement: false`.) After this, proceed to Step 7 to manage the recurring-expense record.
+Expected: `201`. Copy `id` → `recurring_linked_expense_id`. `monthsAlreadyPaid` is optional (integer ≥ 0, default `0`, recurring only). The response has `monthsRunning` = `monthsAlreadyPaid` + calendar months from the period's start through this expense's month, so `11` for a first-month expense here. Negative or fractional values return `400`. (`bankId` is required when the selected payment type has `hasStatement: true`; it may be omitted for a payment type with `hasStatement: false`.) After this, proceed to Step 7 to manage the recurring-expense record.
 
 ### 6c — Installment expense
 
@@ -387,6 +400,10 @@ Body:
 Expected: `201`. The response is the first installment Expense: copy its `id` → `installment_expense_id` and its `installmentGroupId` → `installment_group_id`.
 
 > **Budget periods:** installments are spread by due date, and any due month without a budget period is silently skipped (the request still returns `201`). To get all 12 expenses for Step 8, first create a budget period (`POST /budget-periods`) for every month the due dates fall in. With only April 2026 present, only the April installment exists.
+
+### Expense response shape
+
+Every expense response (`GET`, `POST`, `PATCH`) has nested read-only objects instead of flat lookup ids: `category`, `paymentType`, `bank`, `store` (`{ id, name }`, or `null` for bank/store when none), `installment` (`{ id, totalInstallments, paymentIntervalDays, firstPurchasedAt }` for installment expenses, else `null`) and `monthsRunning` (recurring only, else `null`). There are no flat `categoryId`, `paymentTypeId`, `bankId`, `storeId` or `installmentGroupId` fields in responses; request bodies still use the flat ids. After deleting a bank/category used by an old expense, its `bank`/`category` object must still show the old name.
 
 ### List (unfiltered, paginated)
 
@@ -477,6 +494,17 @@ Body:
 }
 ```
 Expected: `200`.
+
+### Update months already paid
+
+```
+PATCH {{base_url}}/recurring-expenses/{{recurring_expense_id}}
+Body:
+{
+  "monthsAlreadyPaid": 3
+}
+```
+Expected: `200`. `monthsRunning` on the template's expenses changes accordingly.
 
 ### Cancel (set cancelledAt)
 
