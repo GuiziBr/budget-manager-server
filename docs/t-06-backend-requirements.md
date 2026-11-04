@@ -6,13 +6,13 @@ What the backend needs to change so the Month table can sort by Category and Pay
 
 **Nothing here blocks T-06.** The frontend ships sorting for Item, Due, Paid and Amount against the API as documented today. BE-4 only unlocks the Category and Payment headers.
 
-Related: [Month spec](month-screen.md) (M-06) · [Backlog](todo.md) (BE-4) · [Expense API](../APIs/expense.md)
+Related: [Month spec](month-screen.md) (M-06) · [Backlog](todo.md) (BE-4) · [Expense API](APIs/expense.md)
 
 ---
 
 ## 1. What the API docs say today
 
-Checked against [expense.md](../APIs/expense.md) as of 2026-11-03 (last change: commit `f67b233`; no newer API docs are in the repository).
+Checked against [expense.md](APIs/expense.md) as of 2026-11-03 (last change: commit `f67b233`; no newer API docs are in the repository).
 
 `GET /expenses` accepts `sortBy` = `description`, `amount`, `purchasedAt`, `dueAt`, `paidAt`, `installmentNumber`, `createdAt` or `updatedAt`, and `sortOrder` = `asc` or `desc` (default `createdAt` / `desc`). Nullable fields sort **nulls last in both directions**, ties are broken by `id`, and `totalAmount` covers the whole filtered set. An unknown value is a `400`.
 
@@ -60,7 +60,7 @@ The names are suggestions: the frontend adapts to whatever keys the backend pick
 - **Case-insensitive** comparison for names ("bills" next to "Bills"), the same as the user would expect from a list of chips.
 - **No nulls:** category and payment type are required, so "nulls last" doesn't apply.
 - **Ties are broken by `id`**, as today, so paging stays stable.
-- `desc` reverses the order of the key only; the tie-break stays `id` ascending, as for the existing keys.
+- `desc` reverses the order of the key and the `id` tie-break together (both descending), matching how the existing keys behave today.
 - Done in the same query as the page (a join on the lookups the response already resolves), not one query per row.
 - An unknown `sortBy` is still a `400`.
 
@@ -73,7 +73,7 @@ The names are suggestions: the frontend adapts to whatever keys the backend pick
 - `totalAmount` and `total` are the same for every `sortBy`.
 
 ### Docs to update
-[expense.md](../APIs/expense.md): the `sortBy` row of the query table, plus one line per new key describing the order above.
+[expense.md](APIs/expense.md): the `sortBy` row of the query table, plus one line per new key describing the order above.
 
 ### Rollout
 Additive and backwards compatible. The frontend keeps the new keys out of its sort mapping until the backend is deployed (an unknown key would be a `400`), then adds them and enables the two headers (T-21). Tell the frontend the deployed key names and the date.

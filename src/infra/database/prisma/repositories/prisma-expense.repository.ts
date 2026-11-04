@@ -157,30 +157,39 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 			...(budgetPeriodId ? { budgetPeriodId } : {})
 		}
 
-		const [rows, total, aggregate] = await this.db.$transaction(async (tx) => {
-			const pageRows = isCaseInsensitiveSort(sortBy)
-				? await this.findPageOrderedCaseInsensitive(tx, {
-						sortBy,
-						sortOrder,
-						budgetPeriodId,
-						skip,
-						limit
-					})
-				: await tx.expense.findMany({
-						where,
-						skip,
-						take: limit,
-						// id tiebreaker keeps offset pagination stable across duplicate values
-						orderBy: [this.buildOrderBy(sortBy, sortOrder), { id: sortOrder }],
-						include: EXPENSE_INCLUDE
-					})
+		const [rows, total, aggregate] = await this.db.$transaction(
+			async (tx) => {
+				const pageRows = isCaseInsensitiveSort(sortBy)
+					? await this.findPageOrderedCaseInsensitive(tx, {
+							sortBy,
+							sortOrder,
+							budgetPeriodId,
+							skip,
+							limit
+						})
+					: await tx.expense.findMany({
+							where,
+							skip,
+							take: limit,
+							// id tiebreaker keeps offset pagination stable across duplicate values
+							orderBy: [
+								this.buildOrderBy(sortBy, sortOrder),
+								{ id: sortOrder }
+							],
+							include: EXPENSE_INCLUDE
+						})
 
-			return [
-				pageRows,
-				await tx.expense.count({ where }),
-				await tx.expense.aggregate({ where, _sum: { amount: true } })
-			] as const
-		})
+				return [
+					pageRows,
+					await tx.expense.count({ where }),
+					await tx.expense.aggregate({ where, _sum: { amount: true } })
+				] as const
+			},
+			// Repeatable Read gives every statement in this read-only transaction
+			// the same snapshot, so a concurrent write between the page-id lookup,
+			// the row load and the totals can't produce an inconsistent response.
+			{ isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+		)
 
 		return {
 			data: rows.map((r) => this.mapToExpense(r)),
