@@ -152,6 +152,21 @@ describe("ExpenseService", () => {
 			)
 		})
 
+		it.each(["categoryName", "paymentTypeName"] as const)(
+			"should forward sortBy %s to repository",
+			async (sortBy) => {
+				vi.mocked(mockRepository.findAll).mockResolvedValue({
+					data: [],
+					total: 0,
+					totalAmount: 0
+				})
+				await service.findAll({ sortBy, sortOrder: "asc" })
+				expect(mockRepository.findAll).toHaveBeenCalledWith(
+					expect.objectContaining({ sortBy, sortOrder: "asc" })
+				)
+			}
+		)
+
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findAll).mockRejectedValue(new Error("DB down"))
 			await expect(service.findAll({})).rejects.toThrow(

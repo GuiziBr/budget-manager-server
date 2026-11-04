@@ -11,6 +11,8 @@ export const expenseLimitQuerySchema = z.coerce
 
 export const EXPENSE_SORT_FIELDS = [
 	"description",
+	"categoryName",
+	"paymentTypeName",
 	"amount",
 	"purchasedAt",
 	"dueAt",

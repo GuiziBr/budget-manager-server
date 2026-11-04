@@ -68,6 +68,30 @@ describe("ExpenseController", () => {
 			})
 		})
 
+		it.each(["categoryName", "paymentTypeName"] as const)(
+			"should forward sortBy %s to the service",
+			async (sortBy) => {
+				const response = {
+					data: [],
+					total: 0,
+					totalAmount: 0,
+					page: 1,
+					limit: 20
+				}
+				vi.mocked(mockService.findAll).mockResolvedValue(response)
+				await controller.findAll(
+					undefined,
+					undefined,
+					undefined,
+					sortBy,
+					"desc"
+				)
+				expect(mockService.findAll).toHaveBeenCalledWith(
+					expect.objectContaining({ sortBy, sortOrder: "desc" })
+				)
+			}
+		)
+
 		it("should delegate with undefined filters when not provided", async () => {
 			const response = {
 				data: [],
