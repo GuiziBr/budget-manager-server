@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common"
+import { Prisma } from "@prisma/client"
 import type { Expense } from "@/domains/expense/entities/expense.entity"
 import { calculateMonthsRunning } from "@/domains/expense/months-running"
 import {
@@ -71,6 +72,31 @@ const NULLABLE_SORT_FIELDS = new Set<string>([
 	"installmentNumber"
 ])
 
+// Prisma cannot order case-insensitively and the Alpine Postgres image
+// compares by code point (uppercase before lowercase), so these keys are
+// ordered with raw SQL. Lookup joins have no `deleted_at` filter on purpose,
+// so soft-deleted names sort as they are shown.
+const CASE_INSENSITIVE_SORTS = {
+	description: {
+		join: Prisma.empty,
+		expression: Prisma.sql`LOWER(e.description)`
+	},
+	categoryName: {
+		join: Prisma.sql`JOIN categories c ON c.id = e.category_id`,
+		expression: Prisma.sql`LOWER(c.name)`
+	},
+	paymentTypeName: {
+		join: Prisma.sql`JOIN payment_types p ON p.id = e.payment_type_id`,
+		expression: Prisma.sql`LOWER(p.name)`
+	}
+} as const
+
+type CaseInsensitiveSort = keyof typeof CASE_INSENSITIVE_SORTS
+
+function isCaseInsensitiveSort(sortBy: string): sortBy is CaseInsensitiveSort {
+	return sortBy in CASE_INSENSITIVE_SORTS
+}
+
 @Injectable()
 export class PrismaExpenseRepository extends ExpenseRepository {
 	constructor(private readonly db: DatabaseService) {
@@ -131,28 +157,81 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 			...(budgetPeriodId ? { budgetPeriodId } : {})
 		}
 
-		const orderBy = NULLABLE_SORT_FIELDS.has(sortBy)
-			? { [sortBy]: { sort: sortOrder, nulls: "last" as const } }
-			: { [sortBy]: sortOrder }
+		const [rows, total, aggregate] = await this.db.$transaction(async (tx) => {
+			const pageRows = isCaseInsensitiveSort(sortBy)
+				? await this.findPageOrderedCaseInsensitive(tx, {
+						sortBy,
+						sortOrder,
+						budgetPeriodId,
+						skip,
+						limit
+					})
+				: await tx.expense.findMany({
+						where,
+						skip,
+						take: limit,
+						// id tiebreaker keeps offset pagination stable across duplicate values
+						orderBy: [this.buildOrderBy(sortBy, sortOrder), { id: sortOrder }],
+						include: EXPENSE_INCLUDE
+					})
 
-		const [rows, total, aggregate] = await this.db.$transaction([
-			this.db.expense.findMany({
-				where,
-				skip,
-				take: limit,
-				// id tiebreaker keeps offset pagination stable across duplicate values
-				orderBy: [orderBy, { id: sortOrder }],
-				include: EXPENSE_INCLUDE
-			}),
-			this.db.expense.count({ where }),
-			this.db.expense.aggregate({ where, _sum: { amount: true } })
-		])
+			return [
+				pageRows,
+				await tx.expense.count({ where }),
+				await tx.expense.aggregate({ where, _sum: { amount: true } })
+			] as const
+		})
 
 		return {
 			data: rows.map((r) => this.mapToExpense(r)),
 			total,
 			totalAmount: aggregate._sum.amount?.toNumber() ?? 0
 		}
+	}
+
+	private buildOrderBy(sortBy: string, sortOrder: "asc" | "desc") {
+		return NULLABLE_SORT_FIELDS.has(sortBy)
+			? { [sortBy]: { sort: sortOrder, nulls: "last" as const } }
+			: { [sortBy]: sortOrder }
+	}
+
+	// Two steps: raw SQL picks the ordered page of ids, then Prisma loads the
+	// rows with their relations and they are put back in that order.
+	private async findPageOrderedCaseInsensitive(
+		tx: Prisma.TransactionClient,
+		params: {
+			sortBy: CaseInsensitiveSort
+			sortOrder: "asc" | "desc"
+			budgetPeriodId?: string
+			skip: number
+			limit: number
+		}
+	) {
+		const { sortBy, sortOrder, budgetPeriodId, skip, limit } = params
+		const { join, expression } = CASE_INSENSITIVE_SORTS[sortBy]
+		// direction comes from the validated "asc" | "desc" enum, never raw input
+		const direction = sortOrder === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`
+		const periodFilter = budgetPeriodId
+			? Prisma.sql`AND e.budget_period_id = ${budgetPeriodId}::uuid`
+			: Prisma.empty
+
+		const idRows = await tx.$queryRaw<{ id: string }[]>`
+			SELECT e.id
+			FROM expenses e
+			${join}
+			WHERE e.deleted_at IS NULL ${periodFilter}
+			ORDER BY ${expression} ${direction}, e.id ${direction}
+			LIMIT ${limit} OFFSET ${skip}`
+
+		const ids = idRows.map((r) => r.id)
+		const rows = await tx.expense.findMany({
+			where: { id: { in: ids } },
+			include: EXPENSE_INCLUDE
+		})
+		const position = new Map(ids.map((id, index) => [id, index]))
+		return rows.sort(
+			(a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0)
+		)
 	}
 
 	async findById(id: string): Promise<Expense | null> {
