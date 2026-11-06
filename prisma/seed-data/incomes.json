@@ -1,0 +1,89 @@
+[
+	{
+		"id": "e5000000-0000-4000-8000-000000000001",
+		"period": -3,
+		"description": "Salary",
+		"amount": 2800,
+		"isSalary": true,
+		"receivedAt": "-3/15"
+	},
+	{
+		"id": "e5000000-0000-4000-8000-000000000002",
+		"period": -3,
+		"description": "Freelance project",
+		"amount": 450,
+		"isSalary": false,
+		"receivedAt": "-3/20"
+	},
+	{
+		"id": "e5000000-0000-4000-8000-000000000003",
+		"period": -2,
+		"description": "Salary",
+		"amount": 2800,
+		"isSalary": true,
+		"receivedAt": "-2/15"
+	},
+	{
+		"id": "e5000000-0000-4000-8000-000000000004",
+		"period": -2,
+		"description": "Tax refund",
+		"amount": 320.45,
+		"isSalary": false,
+		"receivedAt": "-2/10"
+	},
+	{
+		"id": "e5000000-0000-4000-8000-000000000005",
+		"period": -1,
+		"description": "Salary (1st half)",
+		"amount": 1500,
+		"isSalary": true,
+		"receivedAt": "-1/1"
+	},
+	{
+		"id": "e5000000-0000-4000-8000-000000000006",
+		"period": -1,
+		"description": "Salary (2nd half)",
+		"amount": 1500,
+		"isSalary": true,
+		"receivedAt": "-1/15"
+	},
+	{
+		"id": "e5000000-0000-4000-8000-000000000007",
+		"period": -1,
+		"description": "Gift",
+		"amount": 100,
+		"isSalary": false,
+		"receivedAt": "-1/22"
+	},
+	{
+		"id": "e5000000-0000-4000-8000-000000000008",
+		"period": 0,
+		"description": "Salary (1st half)",
+		"amount": 1500,
+		"isSalary": true,
+		"receivedAt": "0/1"
+	},
+	{
+		"id": "e5000000-0000-4000-8000-000000000009",
+		"period": 0,
+		"description": "Salary (2nd half)",
+		"amount": 1500,
+		"isSalary": true,
+		"receivedAt": "0/15"
+	},
+	{
+		"id": "e5000000-0000-4000-8000-000000000010",
+		"period": 0,
+		"description": "Reimbursement",
+		"amount": 85.5,
+		"isSalary": false,
+		"receivedAt": "0/3"
+	},
+	{
+		"id": "e5000000-0000-4000-8000-000000000011",
+		"period": 0,
+		"description": "Freelance (expected)",
+		"amount": 600,
+		"isSalary": false
+	}
+]

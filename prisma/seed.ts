@@ -1,9 +1,15 @@
-import { readFileSync } from "node:fs"
-import { join } from "node:path"
 import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"
 import { Pool } from "pg"
 import "dotenv/config"
+import { seedBudgetEnvelopes } from "./seeds/budget-envelope.seed"
+import { seedBudgetPeriods } from "./seeds/budget-period.seed"
+import { seedExpenses } from "./seeds/expense.seed"
+import type { Db, SeedContext } from "./seeds/helpers"
+import { seedIncomes } from "./seeds/income.seed"
+import { seedInstallmentGroups } from "./seeds/installment-group.seed"
+import { loadLookupRefs, seedLookups } from "./seeds/lookups.seed"
+import { seedRecurringExpenses } from "./seeds/recurring-expense.seed"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(
@@ -11,63 +17,42 @@ const adapter = new PrismaPg(
 )
 const prisma = new PrismaClient({ adapter })
 
-function loadJson<T>(filename: string): T[] {
-	const filepath = join(__dirname, "seed-data", filename)
-	return JSON.parse(readFileSync(filepath, "utf-8")) as T[]
-}
-
-async function truncateAll() {
-	await prisma.expense.deleteMany()
-	await prisma.budgetEnvelope.deleteMany()
-	await prisma.income.deleteMany()
-	await prisma.recurringExpense.deleteMany()
-	await prisma.installmentGroup.deleteMany()
-	await prisma.category.deleteMany()
-	await prisma.paymentType.deleteMany()
-	await prisma.bank.deleteMany()
-	await prisma.store.deleteMany()
-	await prisma.budgetPeriod.deleteMany()
-	console.log("  all tables cleared")
-}
-
-async function seedCategories() {
-	const rows = loadJson<{
-		id: string
-		name: string
-		hasBudgetEnvelope: boolean
-	}>("categories.json")
-	await prisma.category.createMany({ data: rows })
-	console.log(`  categories: ${rows.length} inserted`)
-}
-
-async function seedPaymentTypes() {
-	const rows = loadJson<{ id: string; name: string; hasStatement: boolean }>(
-		"payment-types.json"
-	)
-	await prisma.paymentType.createMany({ data: rows })
-	console.log(`  payment_types: ${rows.length} inserted`)
-}
-
-async function seedBanks() {
-	const rows = loadJson<{ id: string; name: string }>("banks.json")
-	await prisma.bank.createMany({ data: rows })
-	console.log(`  banks: ${rows.length} inserted`)
-}
-
-async function seedStores() {
-	const rows = loadJson<{ id: string; name: string }>("stores.json")
-	await prisma.store.createMany({ data: rows })
-	console.log(`  stores: ${rows.length} inserted`)
+// Children first (foreign keys). Lookup tables are never deleted.
+async function wipeTransactionalData(db: Db) {
+	await db.expense.deleteMany()
+	await db.budgetEnvelope.deleteMany()
+	await db.income.deleteMany()
+	await db.recurringExpense.deleteMany()
+	await db.installmentGroup.deleteMany()
+	await db.budgetPeriod.deleteMany()
+	console.log("  transactional tables cleared")
 }
 
 async function main() {
-	console.log("Clearing all tables...")
-	await truncateAll()
-	console.log("Seeding lookup tables...")
-	await seedCategories()
-	await seedPaymentTypes()
-	await seedBanks()
-	await seedStores()
+	if (process.env.NODE_ENV === "production") {
+		throw new Error("Refusing to seed in production")
+	}
+
+	console.log("Seeding lookup tables (upsert, nothing deleted)...")
+	await seedLookups(prisma)
+	const ref = await loadLookupRefs(prisma)
+
+	console.log("Resetting and seeding transactional data...")
+	await prisma.$transaction(
+		async (tx) => {
+			await wipeTransactionalData(tx)
+
+			// Parents first (foreign keys).
+			const periodId = await seedBudgetPeriods(tx)
+			const ctx: SeedContext = { ref, periodId }
+			await seedInstallmentGroups(tx)
+			await seedRecurringExpenses(tx, ctx)
+			await seedExpenses(tx, ctx)
+			await seedIncomes(tx, ctx)
+			await seedBudgetEnvelopes(tx, ctx)
+		},
+		{ timeout: 60_000 }
+	)
 	console.log("Done.")
 }
 
