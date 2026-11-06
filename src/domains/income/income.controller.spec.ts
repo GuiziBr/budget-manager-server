@@ -63,7 +63,7 @@ describe("IncomeController", () => {
 				description: "Monthly salary",
 				amount: 5000,
 				isSalary: true,
-				receivedAt: "2026-04-01"
+				receivedAt: new Date("2026-04-01")
 			}
 			vi.mocked(mockService.create).mockResolvedValue(mockIncome)
 			const result = await controller.create(dto)

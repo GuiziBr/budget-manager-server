@@ -405,7 +405,7 @@ describe("ExpenseService", () => {
 			amountPerInstallment: 200,
 			totalInstallments: 3,
 			paymentIntervalDays: 30,
-			firstPurchasedAt: "2026-04-01"
+			firstPurchasedAt: new Date("2026-04-01")
 		}
 
 		it("should create installment expenses for existing periods and return first", async () => {
