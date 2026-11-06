@@ -119,6 +119,19 @@ When setting up production, configure level filtering so `debug`/`verbose` are d
 
 ---
 
-### Database Seed Scripts
+### Database Seed Scripts (done)
 
-Create a Prisma seed script (`prisma/seed.ts`) to populate the database with realistic development data. Should cover all domains: lookup tables (Category, PaymentType, Bank, Store), a set of budget periods, incomes, one-time and recurring expenses, and budget envelopes.
+`npm run seed` (host, needs `DATABASE_URL` on port 5433) or `npm run docker:seed`.
+
+**Layout**
+- `prisma/seed.ts` is the orchestrator only: connects, refuses to run when `NODE_ENV=production`, upserts lookups, then wipes and reseeds the transactional tables in a single transaction (parents first, wipe children first).
+- `prisma/seeds/` has one file per domain (`lookups`, `budget-period`, `installment-group`, `recurring-expense`, `expense`, `income`, `budget-envelope`), each exporting `seedX(db, ctx)`, plus `helpers.ts` (JSON loading, date resolution, name lookup, shared types).
+- `prisma/seed-data/*.json` holds the data, one file per table.
+
+**Behaviour**
+- Lookups (`categories`, `payment-types`, `banks`, `stores`) are upserted by id; nothing in them is deleted, and soft-deleted rows are left alone.
+- Transactional tables (periods, installment groups, recurring expenses, expenses, incomes, envelopes) are wiped and reseeded on every run.
+- Rows reference lookups by name (e.g. `"category": "Grocery"`) and have stable ids. Installment and recurring expenses are written out explicitly in `expenses.json` and linked by id.
+- Dates are relative to the run month as `"<monthOffset>/<day>"` (e.g. `"-1/28"` = day 28 of last month, clamped to the month length). Rows in the current month assume a run around the 6th, so some "overdue" rows may not be overdue yet when seeded earlier in the month.
+
+**Adding a domain:** add `prisma/seed-data/<table>.json` and `prisma/seeds/<domain>.seed.ts`, then call it from `seed.ts` in foreign-key order (and add its table to the wipe).

@@ -1,41 +1,41 @@
 [
 	{
-		"id": "b2c3d4e5-0001-0000-0000-000000000000",
+		"id": "b269be6c-1b95-432c-9639-ea6f6448ef13",
 		"name": "Baby",
 		"hasBudgetEnvelope": true
 	},
 	{
-		"id": "b2c3d4e5-0002-0000-0000-000000000000",
+		"id": "e8e82d00-f26f-41ac-8691-a80c685909ab",
 		"name": "Fuel",
 		"hasBudgetEnvelope": true
 	},
 	{
-		"id": "b2c3d4e5-0003-0000-0000-000000000000",
+		"id": "bd531c56-0c36-41b5-ad49-381d3f51bf5d",
 		"name": "Grocery",
 		"hasBudgetEnvelope": true
 	},
 	{
-		"id": "b2c3d4e5-0004-0000-0000-000000000000",
+		"id": "189755e2-afa7-43db-a945-68b412c98191",
 		"name": "Shopping",
 		"hasBudgetEnvelope": true
 	},
 	{
-		"id": "b2c3d4e5-0005-0000-0000-000000000000",
+		"id": "57d3385c-c73b-41c3-b2eb-82390dfcfd12",
 		"name": "Restaurant",
 		"hasBudgetEnvelope": true
 	},
 	{
-		"id": "b2c3d4e5-0006-0000-0000-000000000000",
+		"id": "3520788b-18de-4e40-b106-8fcf93a381b4",
 		"name": "Parking",
 		"hasBudgetEnvelope": true
 	},
 	{
-		"id": "b2c3d4e5-0007-0000-0000-000000000000",
+		"id": "d141197e-10d5-44ff-9614-d8938051db11",
 		"name": "Pharmacy",
 		"hasBudgetEnvelope": true
 	},
 	{
-		"id": "b2c3d4e5-0008-0000-0000-000000000000",
+		"id": "12f31807-a562-4d80-a993-06ce26a92eff",
 		"name": "Other",
 		"hasBudgetEnvelope": false
 	}

@@ -1,0 +1,170 @@
+[
+	{
+		"id": "e6000000-0000-4000-8000-000000000001",
+		"period": -3,
+		"category": "Baby",
+		"allocatedAmount": 200
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000002",
+		"period": -3,
+		"category": "Fuel",
+		"allocatedAmount": 80
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000003",
+		"period": -3,
+		"category": "Grocery",
+		"allocatedAmount": 300
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000004",
+		"period": -3,
+		"category": "Shopping",
+		"allocatedAmount": 150
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000005",
+		"period": -3,
+		"category": "Restaurant",
+		"allocatedAmount": 250
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000006",
+		"period": -3,
+		"category": "Parking",
+		"allocatedAmount": 20
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000007",
+		"period": -3,
+		"category": "Pharmacy",
+		"allocatedAmount": 10
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000008",
+		"period": -2,
+		"category": "Baby",
+		"allocatedAmount": 200
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000009",
+		"period": -2,
+		"category": "Fuel",
+		"allocatedAmount": 80
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000010",
+		"period": -2,
+		"category": "Grocery",
+		"allocatedAmount": 400
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000011",
+		"period": -2,
+		"category": "Shopping",
+		"allocatedAmount": 50
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000012",
+		"period": -2,
+		"category": "Restaurant",
+		"allocatedAmount": 200
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000013",
+		"period": -2,
+		"category": "Parking",
+		"allocatedAmount": 50
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000014",
+		"period": -2,
+		"category": "Pharmacy",
+		"allocatedAmount": 10
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000015",
+		"period": -1,
+		"category": "Baby",
+		"allocatedAmount": 100
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000016",
+		"period": -1,
+		"category": "Fuel",
+		"allocatedAmount": 120
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000017",
+		"period": -1,
+		"category": "Grocery",
+		"allocatedAmount": 300
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000018",
+		"period": -1,
+		"category": "Shopping",
+		"allocatedAmount": 50
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000019",
+		"period": -1,
+		"category": "Restaurant",
+		"allocatedAmount": 200
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000020",
+		"period": -1,
+		"category": "Parking",
+		"allocatedAmount": 20
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000021",
+		"period": -1,
+		"category": "Pharmacy",
+		"allocatedAmount": 10
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000022",
+		"period": 0,
+		"category": "Baby",
+		"allocatedAmount": 200
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000023",
+		"period": 0,
+		"category": "Fuel",
+		"allocatedAmount": 80
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000024",
+		"period": 0,
+		"category": "Grocery",
+		"allocatedAmount": 150
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000025",
+		"period": 0,
+		"category": "Shopping",
+		"allocatedAmount": 50
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000026",
+		"period": 0,
+		"category": "Restaurant",
+		"allocatedAmount": 90
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000027",
+		"period": 0,
+		"category": "Parking",
+		"allocatedAmount": 20
+	},
+	{
+		"id": "e6000000-0000-4000-8000-000000000028",
+		"period": 0,
+		"category": "Pharmacy",
+		"allocatedAmount": 75
+	}
+]

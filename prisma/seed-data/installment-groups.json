@@ -1,0 +1,42 @@
+[
+	{
+		"id": "e3000000-0000-4000-8000-000000000001",
+		"description": "Laptop",
+		"amountPerInstallment": 150,
+		"totalInstallments": 6,
+		"paymentIntervalDays": 30,
+		"firstPurchasedAt": "-3/12"
+	},
+	{
+		"id": "e3000000-0000-4000-8000-000000000002",
+		"description": "Car part",
+		"amountPerInstallment": 220.5,
+		"totalInstallments": 4,
+		"paymentIntervalDays": 14,
+		"firstPurchasedAt": "-2/20"
+	},
+	{
+		"id": "e3000000-0000-4000-8000-000000000003",
+		"description": "Stroller",
+		"amountPerInstallment": 99.99,
+		"totalInstallments": 3,
+		"paymentIntervalDays": 30,
+		"firstPurchasedAt": "-3/5"
+	},
+	{
+		"id": "e3000000-0000-4000-8000-000000000004",
+		"description": "Phone",
+		"amountPerInstallment": 45,
+		"totalInstallments": 12,
+		"paymentIntervalDays": 30,
+		"firstPurchasedAt": "-1/30"
+	},
+	{
+		"id": "e3000000-0000-4000-8000-000000000005",
+		"description": "Pharmacy plan",
+		"amountPerInstallment": 60,
+		"totalInstallments": 3,
+		"paymentIntervalDays": 30,
+		"firstPurchasedAt": "-3/15"
+	}
+]

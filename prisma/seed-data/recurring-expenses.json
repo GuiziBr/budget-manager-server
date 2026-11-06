@@ -1,0 +1,52 @@
+[
+	{
+		"id": "e4000000-0000-4000-8000-000000000001",
+		"description": "Netflix",
+		"amount": 16.99,
+		"category": "Other",
+		"paymentType": "Credit Card",
+		"bank": "Costco",
+		"startedAt": "-3/1",
+		"monthsAlreadyPaid": 0
+	},
+	{
+		"id": "e4000000-0000-4000-8000-000000000002",
+		"description": "Rent",
+		"amount": 950,
+		"category": "Other",
+		"paymentType": "Pre-Authorized",
+		"startedAt": "-3/1",
+		"monthsAlreadyPaid": 5
+	},
+	{
+		"id": "e4000000-0000-4000-8000-000000000003",
+		"description": "Gym",
+		"amount": 39.99,
+		"category": "Other",
+		"paymentType": "Credit Card",
+		"bank": "Simplii",
+		"startedAt": "-2/1",
+		"monthsAlreadyPaid": 0
+	},
+	{
+		"id": "e4000000-0000-4000-8000-000000000004",
+		"description": "Magazine",
+		"amount": 12.5,
+		"category": "Other",
+		"paymentType": "Credit Card",
+		"bank": "CIBC",
+		"startedAt": "-3/1",
+		"cancelledAt": "-1/31",
+		"monthsAlreadyPaid": 0
+	},
+	{
+		"id": "e4000000-0000-4000-8000-000000000005",
+		"description": "Phone bill",
+		"amount": 65,
+		"category": "Other",
+		"paymentType": "Pre-Authorized",
+		"store": "Rogers",
+		"startedAt": "-1/1",
+		"monthsAlreadyPaid": 0
+	}
+]
