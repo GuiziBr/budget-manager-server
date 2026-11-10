@@ -100,6 +100,6 @@ Found while reading the API docs; no new action, listed so they aren't lost.
 
 | Item | Where | Affects |
 |---|---|---|
-| G-1: `PATCH` and `DELETE /expenses/:id` don't document the `422` for past months, while [income.md](../APIs/income.md) and [budget-envelope.md](../APIs/budget-envelope.md) do | [todo.md](todo.md) | T-34 |
-| BE-3: allow `paidAt` alone on past-month expenses | [todo.md](todo.md) | T-25, T-34 |
+| G-1: resolved — `PATCH` and `DELETE /expenses/:id` no longer return `422` for past months (guard removed in #30); only [budget-envelope.md](../APIs/budget-envelope.md) keeps a past-period rule | [todo.md](todo.md) | T-34 |
+| BE-3: resolved — past-month expenses are fully editable, so `paidAt` alone is allowed | [todo.md](todo.md) | T-25, T-34 |
 | G-12: category name on envelopes | [todo.md](todo.md) | T-19, T-24 |
