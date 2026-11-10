@@ -25,7 +25,7 @@
 | **Budget-periods** | `POST`, `GET` (list + by id), `DELETE` (no `PATCH` — periods are immutable) — plus `year`/`month` validation, duplicate-period rule, delete-with-linked-records guard, and the period-opening side effect |
 | **Income** | Full lifecycle — `POST`, `GET` (list + by id, `?budgetPeriodId` filter), `PATCH`, `DELETE` — plus monetary-amount rules, optional-field defaults, period-existence check, and empty-`PATCH` guard |
 | **Budget-envelopes** | Full lifecycle — `POST`, `GET` (list + by id, `?budgetPeriodId` filter), `PATCH`, `DELETE` — plus period/category existence, past-period guard, category-support rule, `(period, category)` uniqueness |
-| **Expenses** | Full lifecycle — discriminated-union `POST` (one-time/recurring/installment), paginated `GET` (list + by id), `PATCH`, `DELETE` — plus FK existence, `hasStatement → bankId` rule, installment period-spread, and past-period guard on update/delete |
+| **Expenses** | Full lifecycle — discriminated-union `POST` (one-time/recurring/installment), paginated `GET` (list + by id), `PATCH`, `DELETE` — plus FK existence, `hasStatement → bankId` rule, installment period-spread, and past-period guard on update/delete (since removed in #30) |
 
 **Out of scope:** the expense-derived **recurring-expense** and **installment-group** management endpoints, and the business-scenario tests in `qa-postman-guide.md` Part 2.
 
@@ -1116,7 +1116,7 @@ Each subsection covers all test cases for a single API.
 
 ### 4.8 — Expenses
 
-> `POST /expenses` is a discriminated union on `type` (`one-time` / `recurring` / `installment`). Base fields: `budgetPeriodId`, `categoryId`, `paymentTypeId` (required), `bankId`, `storeId` (optional, nullable), `description`. Date fields use `z.coerce.date()`. `GET /expenses` is paginated: `{ data, total, page, limit }` with `?budgetPeriodId`, `?page`, `?limit`. Several business rules apply (FK existence, `hasStatement → bankId`, installment period-spread, past-period guard on update/delete).
+> `POST /expenses` is a discriminated union on `type` (`one-time` / `recurring` / `installment`). Base fields: `budgetPeriodId`, `categoryId`, `paymentTypeId` (required), `bankId`, `storeId` (optional, nullable), `description`. Date fields use `z.coerce.date()`. `GET /expenses` is paginated: `{ data, total, page, limit }` with `?budgetPeriodId`, `?page`, `?limit`. Several business rules apply (FK existence, `hasStatement → bankId`, installment period-spread, past-period guard on update/delete, since removed in #30).
 
 #### `POST /expenses` — one-time
 
@@ -1331,14 +1331,14 @@ Each subsection covers all test cases for a single API.
 ##### TC-195 — Past-period expense
 
 - **Expected / Actual:** `422` (`"Cannot update an expense from a past budget period"`).
-- **Result:** ✅ PASS
+- **Result:** ✅ PASS at the time of this run. **Superseded:** the guard was removed in #30; updating a past-period expense now succeeds (`200`).
 
 #### `DELETE /expenses/:id`
 
 ##### TC-196 — Past-period expense
 
 - **Expected / Actual:** `422` (`"Cannot delete an expense from a past budget period"`).
-- **Result:** ✅ PASS
+- **Result:** ✅ PASS at the time of this run. **Superseded:** the guard was removed in #30; deleting a past-period expense now succeeds (`204`).
 
 ##### TC-197 — Valid delete
 
@@ -1398,8 +1398,9 @@ Each subsection covers all test cases for a single API.
 
 ##### BR-33 — Past-period guard on update/delete only
 
-- **Rule:** update/delete of an expense in a past period → `422` (TC-195, TC-196). **Create is not blocked on past periods** — a one-time expense was created in a 2025 period (`201`). Asymmetry vs. budget-envelope (which blocks past create).
-- **Result:** ✅ PASS (noted)
+- **Rule (at the time of this run):** update/delete of an expense in a past period → `422` (TC-195, TC-196). **Create is not blocked on past periods** — a one-time expense was created in a 2025 period (`201`).
+- **Superseded:** the guard was removed in #30. Expenses (like incomes) can now be created, updated and deleted in any period; only budget envelopes remain locked for past periods.
+- **Result:** ✅ PASS at the time of this run (rule no longer applies)
 
 ##### BR-34 — Pagination defaults & bounds
 
@@ -1676,8 +1677,8 @@ Each subsection covers all test cases for a single API.
 | TC-192 | `PATCH /:id` | unknown `categoryId` | `404` | `404` | ✅ PASS |
 | TC-193 | `PATCH /:id` | non-UUID | `400` | `400` | ✅ PASS |
 | TC-194 | `PATCH /:id` | unknown UUID | `404` | `404` | ✅ PASS |
-| TC-195 | `PATCH /:id` | past-period expense | `422` | `422` | ✅ PASS |
-| TC-196 | `DELETE /:id` | past-period expense | `422` | `422` | ✅ PASS |
+| TC-195 | `PATCH /:id` | past-period expense | `422` | `422` | ✅ PASS (superseded by #30: now `200`) |
+| TC-196 | `DELETE /:id` | past-period expense | `422` | `422` | ✅ PASS (superseded by #30: now `204`) |
 | TC-197 | `DELETE /:id` | valid delete | `204` | `204` | ✅ PASS |
 | TC-198 | `DELETE /:id` | GET after delete | `404` | `404` | ✅ PASS |
 | TC-199 | `DELETE /:id` | second delete | `404` | `404` | ✅ PASS |
@@ -1688,7 +1689,7 @@ Each subsection covers all test cases for a single API.
 | BR-30 | — | `hasStatement` requires `bankId` | `400` | `400` | ✅ PASS |
 | BR-31 | `POST` | recurring creates template | created | created | ✅ PASS |
 | BR-32 | `POST` | installment period-spread / skip / all-missing | per rule | per rule | ✅ PASS |
-| BR-33 | — | past-period guard (update/delete only) | `422` | `422` | ✅ PASS |
+| BR-33 | — | past-period guard (update/delete only) | `422` | `422` | ✅ PASS (superseded by #30: guard removed) |
 | BR-34 | `GET` | pagination defaults & bounds | enforced | enforced | ✅ PASS |
 | BR-35 | — | soft delete hides reads | hidden | hidden | ✅ PASS |
 
@@ -1704,7 +1705,7 @@ Each subsection covers all test cases for a single API.
 - **Validation error shape:** `400` with Zod issues under `message` (array), plus `error` and `statusCode`.
 - **Not-found message:** `{ "message": "<Domain> with id <uuid> not found", "error": "Not Found", "statusCode": 404 }`.
 - **Budget-envelopes** carry only `allocatedAmount` — no `spentAmount` / `remainingAmount` / utilization. Spend must be aggregated client-side from expenses.
-- **Past-period guard:** budget envelopes cannot be created, updated, or deleted for a budget period earlier than the current month → `422`. **Expenses** apply the guard to update/delete only — creating an expense in a past period is allowed.
+- **Past-period guard:** budget envelopes cannot be created, updated, or deleted for a budget period earlier than the current month → `422`. **Expenses** had a guard on update/delete at the time of this run, but it was removed in #30; expenses and incomes are now editable in any period.
 - **Expense dates** (`purchasedAt`, `dueAt`, `paidAt`, installment `firstPurchasedAt`) accept date strings and are coerced to DateTime (#29); they serialize back as ISO DateTime (`...T00:00:00.000Z`).
 - **`GET /expenses` is paginated:** `{ data, total, page, limit }`, defaults `page: 1` / `limit: 20`, `limit` max 100.
 - **Installments spread across periods** by due date; a due month with no active budget period is silently skipped, and an installment with no matching period for any due date returns `400`.
@@ -1713,4 +1714,4 @@ Each subsection covers all test cases for a single API.
 
 ## 7. Conclusion
 
-All endpoints and business rules for the lookup domains, budget-period, income, budget-envelope, and expense pass. No open defects in the tested scope. Notable consumer-facing behaviours: budget envelopes expose only `allocatedAmount` (no computed spend); expense creation accepts past periods while update/delete do not (`422`); and installment expenses are spread across existing budget periods by due date (missing months are skipped). The only remaining untested endpoints are the expense-derived recurring-expense and installment-group management routes.
+All endpoints and business rules for the lookup domains, budget-period, income, budget-envelope, and expense pass. No open defects in the tested scope. Notable consumer-facing behaviours: budget envelopes expose only `allocatedAmount` (no computed spend); expense create, update and delete accept past periods (update/delete returned `422` at the time of this run; guard removed in #30); and installment expenses are spread across existing budget periods by due date (missing months are skipped). The only remaining untested endpoints are the expense-derived recurring-expense and installment-group management routes.

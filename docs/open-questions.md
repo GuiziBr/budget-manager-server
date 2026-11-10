@@ -6,17 +6,17 @@ Undecided business rules, functional constraints, and implementation choices tha
 
 ## OQ-001 — Can past income records be soft-deleted? ✅ Resolved
 
-**Decision:** Block deletion if the income's budget period is in a past calendar month.
+**Decision:** Yes. The earlier rule that blocked deletion for past-period incomes was removed; incomes can be updated and soft-deleted regardless of their budget period.
 
-**Implementation:** `IncomeService.delete` fetches the budget period via `BudgetPeriodService.findById` and throws `UnprocessableEntityException` (422) if `period.year/month` is before the current calendar month.
+**Implementation:** `IncomeService.delete` only checks that the income exists (404 otherwise).
 
 ---
 
 ## OQ-002 — Can records in a past budget period be mutated (update/delete)? ✅ Resolved
 
-**Decision:** Implicit lock — block mutations on records whose `budgetPeriod.year/month` is before the current calendar month.
+**Decision:** Only budget envelopes are locked. Incomes and expenses are actuals and stay editable regardless of how old their budget period is.
 
-**Implementation:** Each transactional domain service (`income`, `expense`, `budget-envelope`) checks the linked period's `year/month` against today in both `update` and `delete`, throwing `UnprocessableEntityException` (422) for past periods. `income` is implemented; `expense` and `budget-envelope` will apply the same guard when those services are built.
+**Implementation:** `BudgetEnvelopeService` throws `UnprocessableEntityException` (422) on create, update and delete when the period's `year/month` is before the current UTC month. The `expense` guard was removed in #30 (it misfired the moment a month rolled over) and the `income` guard was removed afterwards, so past-period expenses and incomes can be created, updated and deleted.
 
 ---
 
