@@ -1,7 +1,7 @@
 [
-	{ "id": "a1b2c3d4-0001-0000-0000-000000000000", "name": "CIBC" },
-	{ "id": "a1b2c3d4-0002-0000-0000-000000000000", "name": "Costco" },
-	{ "id": "a1b2c3d4-0003-0000-0000-000000000000", "name": "Neo" },
-	{ "id": "a1b2c3d4-0004-0000-0000-000000000000", "name": "Scotiabank" },
-	{ "id": "a1b2c3d4-0005-0000-0000-000000000000", "name": "Simplii" }
+	{ "id": "a903ac62-5f1a-4ce7-893a-c19e0805cf58", "name": "CIBC" },
+	{ "id": "82b9a23b-175d-47ba-ae64-2a4277a37143", "name": "Costco" },
+	{ "id": "3c95172a-7feb-491f-afb6-67666e7441a8", "name": "Neo" },
+	{ "id": "e7c845ab-0452-461a-9cfc-7db0ffd8a99f", "name": "Scotiabank" },
+	{ "id": "77084d38-26a4-4c3f-b134-19fa1bcb43c9", "name": "Simplii" }
 ]

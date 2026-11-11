@@ -1,6 +1,6 @@
 [
 	{
-		"id": "e4000000-0000-4000-8000-000000000001",
+		"id": "67a350c1-7589-499a-b19f-f1fa5184b1cf",
 		"description": "Netflix",
 		"amount": 16.99,
 		"category": "Other",
@@ -10,7 +10,7 @@
 		"monthsAlreadyPaid": 0
 	},
 	{
-		"id": "e4000000-0000-4000-8000-000000000002",
+		"id": "12b1cca2-2fbb-4ecd-b061-30e7961be7b2",
 		"description": "Rent",
 		"amount": 950,
 		"category": "Other",
@@ -19,7 +19,7 @@
 		"monthsAlreadyPaid": 5
 	},
 	{
-		"id": "e4000000-0000-4000-8000-000000000003",
+		"id": "15980d6d-64b4-4654-ba7f-750ad926c2e8",
 		"description": "Gym",
 		"amount": 39.99,
 		"category": "Other",
@@ -29,7 +29,7 @@
 		"monthsAlreadyPaid": 0
 	},
 	{
-		"id": "e4000000-0000-4000-8000-000000000004",
+		"id": "c0c09ebe-7da5-4bd1-923a-c4aff3961df1",
 		"description": "Magazine",
 		"amount": 12.5,
 		"category": "Other",
@@ -40,7 +40,7 @@
 		"monthsAlreadyPaid": 0
 	},
 	{
-		"id": "e4000000-0000-4000-8000-000000000005",
+		"id": "3a5841ee-3660-438c-abce-b955828fba0a",
 		"description": "Phone bill",
 		"amount": 65,
 		"category": "Other",
