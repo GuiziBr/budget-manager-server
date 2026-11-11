@@ -1,6 +1,6 @@
 [
 	{
-		"id": "e5000000-0000-4000-8000-000000000001",
+		"id": "0927668d-f08d-44ec-a92b-7f39a741b123",
 		"period": -3,
 		"description": "Salary",
 		"amount": 2800,
@@ -8,7 +8,7 @@
 		"receivedAt": "-3/15"
 	},
 	{
-		"id": "e5000000-0000-4000-8000-000000000002",
+		"id": "1b3cbfad-abdb-49fd-99ee-3a113f76e376",
 		"period": -3,
 		"description": "Freelance project",
 		"amount": 450,
@@ -16,7 +16,7 @@
 		"receivedAt": "-3/20"
 	},
 	{
-		"id": "e5000000-0000-4000-8000-000000000003",
+		"id": "70dbcd4d-387a-4f8b-a816-8c4b25f7486e",
 		"period": -2,
 		"description": "Salary",
 		"amount": 2800,
@@ -24,7 +24,7 @@
 		"receivedAt": "-2/15"
 	},
 	{
-		"id": "e5000000-0000-4000-8000-000000000004",
+		"id": "8652a4d2-b030-4544-910c-59ce9046d651",
 		"period": -2,
 		"description": "Tax refund",
 		"amount": 320.45,
@@ -32,7 +32,7 @@
 		"receivedAt": "-2/10"
 	},
 	{
-		"id": "e5000000-0000-4000-8000-000000000005",
+		"id": "67e79123-f86a-4531-a8a5-d9f401eeceb6",
 		"period": -1,
 		"description": "Salary (1st half)",
 		"amount": 1500,
@@ -40,7 +40,7 @@
 		"receivedAt": "-1/1"
 	},
 	{
-		"id": "e5000000-0000-4000-8000-000000000006",
+		"id": "0a4c1258-5306-4509-a7bc-265545e7a926",
 		"period": -1,
 		"description": "Salary (2nd half)",
 		"amount": 1500,
@@ -48,7 +48,7 @@
 		"receivedAt": "-1/15"
 	},
 	{
-		"id": "e5000000-0000-4000-8000-000000000007",
+		"id": "56a4f271-c56f-489c-ae35-2cb7609a59c4",
 		"period": -1,
 		"description": "Gift",
 		"amount": 100,
@@ -56,7 +56,7 @@
 		"receivedAt": "-1/22"
 	},
 	{
-		"id": "e5000000-0000-4000-8000-000000000008",
+		"id": "a8efa5c4-ed99-4faf-86e7-f1d7ec499fad",
 		"period": 0,
 		"description": "Salary (1st half)",
 		"amount": 1500,
@@ -64,7 +64,7 @@
 		"receivedAt": "0/1"
 	},
 	{
-		"id": "e5000000-0000-4000-8000-000000000009",
+		"id": "4e7886f1-6516-4314-9199-38aa3753e525",
 		"period": 0,
 		"description": "Salary (2nd half)",
 		"amount": 1500,
@@ -72,7 +72,7 @@
 		"receivedAt": "0/15"
 	},
 	{
-		"id": "e5000000-0000-4000-8000-000000000010",
+		"id": "11a7f777-db51-4771-9442-ef8d0382eeb9",
 		"period": 0,
 		"description": "Reimbursement",
 		"amount": 85.5,
@@ -80,7 +80,7 @@
 		"receivedAt": "0/3"
 	},
 	{
-		"id": "e5000000-0000-4000-8000-000000000011",
+		"id": "c6d5769f-cdee-4ddf-8121-2e72e83636ad",
 		"period": 0,
 		"description": "Freelance (expected)",
 		"amount": 600,

@@ -1,6 +1,6 @@
 [
 	{
-		"id": "e3000000-0000-4000-8000-000000000001",
+		"id": "880781a9-1084-4a67-93b0-2596fc5f2cdc",
 		"description": "Laptop",
 		"amountPerInstallment": 150,
 		"totalInstallments": 6,
@@ -8,7 +8,7 @@
 		"firstPurchasedAt": "-3/12"
 	},
 	{
-		"id": "e3000000-0000-4000-8000-000000000002",
+		"id": "1a93c186-cada-41da-b745-ae707ea9c8f9",
 		"description": "Car part",
 		"amountPerInstallment": 220.5,
 		"totalInstallments": 4,
@@ -16,7 +16,7 @@
 		"firstPurchasedAt": "-2/20"
 	},
 	{
-		"id": "e3000000-0000-4000-8000-000000000003",
+		"id": "c89ad9f6-57bf-4701-b509-dabc6f8c81f2",
 		"description": "Stroller",
 		"amountPerInstallment": 99.99,
 		"totalInstallments": 3,
@@ -24,7 +24,7 @@
 		"firstPurchasedAt": "-3/5"
 	},
 	{
-		"id": "e3000000-0000-4000-8000-000000000004",
+		"id": "8fa055e1-1062-48b9-af60-9acb2cf855f2",
 		"description": "Phone",
 		"amountPerInstallment": 45,
 		"totalInstallments": 12,
@@ -32,7 +32,7 @@
 		"firstPurchasedAt": "-1/30"
 	},
 	{
-		"id": "e3000000-0000-4000-8000-000000000005",
+		"id": "16bf4351-ea64-48cf-bfd4-7ba3c3d1e2fe",
 		"description": "Pharmacy plan",
 		"amountPerInstallment": 60,
 		"totalInstallments": 3,
