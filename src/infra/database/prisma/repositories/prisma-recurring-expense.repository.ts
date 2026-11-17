@@ -5,6 +5,7 @@ import type { UpdateRecurringExpenseDTO } from "@/domains/recurring-expense/dtos
 import type { RecurringExpense } from "@/domains/recurring-expense/entities/recurring-expense.entity"
 import { RecurringExpenseRepository } from "@/domains/recurring-expense/repositories/recurring-expense.repository"
 import { DatabaseService } from "@/infra/database/database.service"
+import { lockLookupsForShare } from "@/infra/database/prisma/helpers/lock-lookup"
 
 @Injectable()
 export class PrismaRecurringExpenseRepository extends RecurringExpenseRepository {
@@ -50,8 +51,11 @@ export class PrismaRecurringExpenseRepository extends RecurringExpenseRepository
 	}
 
 	async create(data: CreateRecurringExpenseDTO): Promise<RecurringExpense> {
-		const record = await this.db.recurringExpense.create({ data })
-		return this.mapToRecurringExpense(record)
+		return this.db.$transaction(async (tx) => {
+			await lockLookupsForShare(tx, data)
+			const record = await tx.recurringExpense.create({ data })
+			return this.mapToRecurringExpense(record)
+		})
 	}
 
 	async update(

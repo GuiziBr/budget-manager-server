@@ -1,5 +1,4 @@
 import {
-	ConflictException,
 	HttpException,
 	Injectable,
 	InternalServerErrorException,
@@ -71,17 +70,11 @@ export class StoreService {
 		try {
 			await this.findById(id)
 			const now = new Date()
-			const inUse = await this.storeRepository.hasActiveReferences(
+			await this.storeRepository.delete(
 				id,
 				now.getUTCFullYear(),
 				now.getUTCMonth() + 1
 			)
-			if (inUse) {
-				throw new ConflictException(
-					`Cannot delete store ${id}: it is referenced by active recurring expenses or expenses in the current or future budget periods`
-				)
-			}
-			await this.storeRepository.delete(id)
 			this.logger.log(`Deleted store ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error

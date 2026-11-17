@@ -11,6 +11,21 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16.2-alpine3.19
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin
+          POSTGRES_DB: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U admin"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
       PORT: 3000
       DATABASE_URL: postgresql://admin:admin@budget-manager-db:5432/expenses?schema=public
@@ -45,3 +60,6 @@ jobs:
 
       - name: Unit tests
         run: npm run test:cov
+
+      - name: Integration tests (real Postgres)
+        run: npm run test:e2e

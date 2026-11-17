@@ -21,8 +21,7 @@ const mockRepository: BankRepository = {
 	findById: vi.fn(),
 	create: vi.fn(),
 	update: vi.fn(),
-	delete: vi.fn(),
-	hasActiveReferences: vi.fn()
+	delete: vi.fn()
 }
 
 describe("BankService", () => {
@@ -129,16 +128,20 @@ describe("BankService", () => {
 		it("should delete the bank", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockBank)
 			vi.mocked(mockRepository.delete).mockResolvedValue(undefined)
-			vi.mocked(mockRepository.hasActiveReferences).mockResolvedValue(false)
 			await service.delete("uuid-1")
-			expect(mockRepository.delete).toHaveBeenCalledWith("uuid-1")
+			expect(mockRepository.delete).toHaveBeenCalledWith(
+				"uuid-1",
+				expect.any(Number),
+				expect.any(Number)
+			)
 		})
 
 		it("should throw ConflictException when bank has active references", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockBank)
-			vi.mocked(mockRepository.hasActiveReferences).mockResolvedValue(true)
+			vi.mocked(mockRepository.delete).mockRejectedValue(
+				new ConflictException("referenced by budget envelopes")
+			)
 			await expect(service.delete("uuid-1")).rejects.toThrow(ConflictException)
-			expect(mockRepository.delete).not.toHaveBeenCalled()
 		})
 
 		it("should throw NotFoundException when bank not found", async () => {
@@ -150,7 +153,6 @@ describe("BankService", () => {
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockBank)
-			vi.mocked(mockRepository.hasActiveReferences).mockResolvedValue(false)
 			vi.mocked(mockRepository.delete).mockRejectedValue(new Error("DB down"))
 			await expect(service.delete("uuid-1")).rejects.toThrow(
 				InternalServerErrorException

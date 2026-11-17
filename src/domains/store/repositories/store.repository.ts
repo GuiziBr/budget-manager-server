@@ -7,10 +7,9 @@ export abstract class StoreRepository {
 	abstract findById(id: string): Promise<Store | null>
 	abstract create(data: CreateStoreDTO): Promise<Store>
 	abstract update(id: string, data: UpdateStoreDTO): Promise<Store>
-	abstract delete(id: string): Promise<void>
-	abstract hasActiveReferences(
+	abstract delete(
 		id: string,
 		currentYear: number,
 		currentMonth: number
-	): Promise<boolean>
+	): Promise<void>
 }

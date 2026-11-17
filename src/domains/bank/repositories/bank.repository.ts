@@ -7,10 +7,9 @@ export abstract class BankRepository {
 	abstract findById(id: string): Promise<Bank | null>
 	abstract create(data: CreateBankDTO): Promise<Bank>
 	abstract update(id: string, data: UpdateBankDTO): Promise<Bank>
-	abstract delete(id: string): Promise<void>
-	abstract hasActiveReferences(
+	abstract delete(
 		id: string,
 		currentYear: number,
 		currentMonth: number
-	): Promise<boolean>
+	): Promise<void>
 }
