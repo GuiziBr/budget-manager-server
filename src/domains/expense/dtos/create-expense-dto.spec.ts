@@ -38,3 +38,47 @@ describe("createExpenseSchema — monthsAlreadyPaid", () => {
 		expect(result.data).not.toHaveProperty("monthsAlreadyPaid")
 	})
 })
+
+describe("createExpenseSchema — future purchase dates", () => {
+	const future = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+	const past = "2026-01-01"
+
+	it("should reject a future purchasedAt", () => {
+		const result = createExpenseSchema.safeParse({
+			...base,
+			purchasedAt: future
+		})
+		expect(result.success).toBe(false)
+	})
+
+	it("should accept a past purchasedAt", () => {
+		const result = createExpenseSchema.safeParse({
+			...base,
+			purchasedAt: past
+		})
+		expect(result.success).toBe(true)
+	})
+
+	it("should reject a future firstPurchasedAt on installments", () => {
+		const installment = {
+			type: ExpenseType.INSTALLMENT,
+			budgetPeriodId: base.budgetPeriodId,
+			categoryId: base.categoryId,
+			paymentTypeId: base.paymentTypeId,
+			description: "TV",
+			amountPerInstallment: 100,
+			totalInstallments: 3,
+			paymentIntervalDays: 30
+		}
+		expect(
+			createExpenseSchema.safeParse({
+				...installment,
+				firstPurchasedAt: future
+			}).success
+		).toBe(false)
+		expect(
+			createExpenseSchema.safeParse({ ...installment, firstPurchasedAt: past })
+				.success
+		).toBe(true)
+	})
+})

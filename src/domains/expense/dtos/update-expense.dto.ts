@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { monetaryAmountSchema } from "@/shared/schemas/monetary-amount.schema"
+import { pastOrPresentDateSchema } from "@/shared/schemas/past-or-present-date.schema"
 
 export const updateExpenseSchema = z
 	.object({
@@ -9,7 +10,7 @@ export const updateExpenseSchema = z
 		paymentTypeId: z.uuid().optional(),
 		bankId: z.uuid().optional().nullable(),
 		storeId: z.uuid().optional().nullable(),
-		purchasedAt: z.coerce.date().optional().nullable(),
+		purchasedAt: pastOrPresentDateSchema.optional().nullable(),
 		dueAt: z.coerce.date().optional().nullable(),
 		paidAt: z.coerce.date().optional().nullable()
 	})

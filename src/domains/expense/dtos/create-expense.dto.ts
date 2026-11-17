@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { monetaryAmountSchema } from "@/shared/schemas/monetary-amount.schema"
+import { pastOrPresentDateSchema } from "@/shared/schemas/past-or-present-date.schema"
 
 export const ExpenseType = {
 	ONE_TIME: "one-time",
@@ -17,7 +18,7 @@ const baseExpenseFields = {
 }
 
 const dateFields = {
-	purchasedAt: z.coerce.date().optional(),
+	purchasedAt: pastOrPresentDateSchema.optional(),
 	dueAt: z.coerce.date().optional(),
 	paidAt: z.coerce.date().optional()
 }
@@ -42,7 +43,7 @@ export const createExpenseSchema = z.discriminatedUnion("type", [
 		amountPerInstallment: monetaryAmountSchema,
 		totalInstallments: z.number().int().min(2),
 		paymentIntervalDays: z.number().int().min(1),
-		firstPurchasedAt: z.coerce.date()
+		firstPurchasedAt: pastOrPresentDateSchema
 	})
 ])
 
