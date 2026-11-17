@@ -68,6 +68,7 @@ jobs:
           name: coverage
           path: coverage/
           if-no-files-found: ignore
+          
       - name: Integration tests (real Postgres)
         run: npm run test:e2e
 
