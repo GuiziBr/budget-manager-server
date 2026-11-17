@@ -61,5 +61,13 @@ jobs:
       - name: Unit tests
         run: npm run test:cov
 
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
       - name: Integration tests (real Postgres)
         run: npm run test:e2e
+
