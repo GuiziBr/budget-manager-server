@@ -22,8 +22,7 @@ const mockRepository: PaymentTypeRepository = {
 	findById: vi.fn(),
 	create: vi.fn(),
 	update: vi.fn(),
-	delete: vi.fn(),
-	hasActiveReferences: vi.fn()
+	delete: vi.fn()
 }
 
 describe("PaymentTypeService", () => {
@@ -132,16 +131,20 @@ describe("PaymentTypeService", () => {
 		it("should delete the payment type", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockPaymentType)
 			vi.mocked(mockRepository.delete).mockResolvedValue(undefined)
-			vi.mocked(mockRepository.hasActiveReferences).mockResolvedValue(false)
 			await service.delete("uuid-1")
-			expect(mockRepository.delete).toHaveBeenCalledWith("uuid-1")
+			expect(mockRepository.delete).toHaveBeenCalledWith(
+				"uuid-1",
+				expect.any(Number),
+				expect.any(Number)
+			)
 		})
 
 		it("should throw ConflictException when payment type has active references", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockPaymentType)
-			vi.mocked(mockRepository.hasActiveReferences).mockResolvedValue(true)
+			vi.mocked(mockRepository.delete).mockRejectedValue(
+				new ConflictException("referenced by budget envelopes")
+			)
 			await expect(service.delete("uuid-1")).rejects.toThrow(ConflictException)
-			expect(mockRepository.delete).not.toHaveBeenCalled()
 		})
 
 		it("should throw NotFoundException when payment type not found", async () => {
@@ -153,7 +156,6 @@ describe("PaymentTypeService", () => {
 
 		it("should throw InternalServerErrorException on unexpected error", async () => {
 			vi.mocked(mockRepository.findById).mockResolvedValue(mockPaymentType)
-			vi.mocked(mockRepository.hasActiveReferences).mockResolvedValue(false)
 			vi.mocked(mockRepository.delete).mockRejectedValue(new Error("DB down"))
 			await expect(service.delete("uuid-1")).rejects.toThrow(
 				InternalServerErrorException

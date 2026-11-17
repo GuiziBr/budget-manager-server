@@ -7,10 +7,9 @@ export abstract class PaymentTypeRepository {
 	abstract findById(id: string): Promise<PaymentType | null>
 	abstract create(data: CreatePaymentTypeDTO): Promise<PaymentType>
 	abstract update(id: string, data: UpdatePaymentTypeDTO): Promise<PaymentType>
-	abstract delete(id: string): Promise<void>
-	abstract hasActiveReferences(
+	abstract delete(
 		id: string,
 		currentYear: number,
 		currentMonth: number
-	): Promise<boolean>
+	): Promise<void>
 }

@@ -12,6 +12,7 @@ import {
 	type UpdateExpenseData
 } from "@/domains/expense/repositories/expense.repository"
 import { DatabaseService } from "@/infra/database/database.service"
+import { lockLookupsForShare } from "@/infra/database/prisma/helpers/lock-lookup"
 
 // Relations are included without a `deletedAt` filter on purpose: expenses
 // keep pointing at lookups (category, bank...) that were soft-deleted later,
@@ -253,11 +254,14 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 	}
 
 	async create(data: CreateExpenseData): Promise<Expense> {
-		const row = await this.db.expense.create({
-			data,
-			include: EXPENSE_INCLUDE
+		return this.db.$transaction(async (tx) => {
+			await lockLookupsForShare(tx, data)
+			const row = await tx.expense.create({
+				data,
+				include: EXPENSE_INCLUDE
+			})
+			return this.mapToExpense(row)
 		})
-		return this.mapToExpense(row)
 	}
 
 	async createWithRecurringTemplate(
@@ -265,6 +269,7 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 		recurringData: CreateRecurringTemplateData
 	): Promise<Expense> {
 		return this.db.$transaction(async (tx) => {
+			await lockLookupsForShare(tx, expenseData)
 			const recurring = await tx.recurringExpense.create({
 				data: recurringData
 			})
@@ -315,6 +320,8 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 		expenses: CreateInstallmentExpenseData[]
 	): Promise<Expense[]> {
 		return this.db.$transaction(async (tx) => {
+			// All installments of a group share the same lookups.
+			if (expenses[0]) await lockLookupsForShare(tx, expenses[0])
 			const group = await tx.installmentGroup.create({ data: groupData })
 			const rows = await Promise.all(
 				expenses.map((e) =>
@@ -329,12 +336,20 @@ export class PrismaExpenseRepository extends ExpenseRepository {
 	}
 
 	async update(id: string, data: UpdateExpenseData): Promise<Expense> {
-		const row = await this.db.expense.update({
-			where: { id, deletedAt: null },
-			data,
-			include: EXPENSE_INCLUDE
+		return this.db.$transaction(async (tx) => {
+			await lockLookupsForShare(tx, {
+				categoryId: data.categoryId,
+				paymentTypeId: data.paymentTypeId,
+				bankId: data.bankId,
+				storeId: data.storeId
+			})
+			const row = await tx.expense.update({
+				where: { id, deletedAt: null },
+				data,
+				include: EXPENSE_INCLUDE
+			})
+			return this.mapToExpense(row)
 		})
-		return this.mapToExpense(row)
 	}
 
 	async delete(id: string): Promise<void> {

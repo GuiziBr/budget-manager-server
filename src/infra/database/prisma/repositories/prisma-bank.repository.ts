@@ -9,6 +9,7 @@ import {
 	activeRecurringFilter,
 	openPeriodFilter
 } from "@/infra/database/prisma/helpers/active-reference.filters"
+import { lockLookupForDelete } from "@/infra/database/prisma/helpers/lock-lookup"
 
 @Injectable()
 export class PrismaBankRepository extends BankRepository {
@@ -56,35 +57,39 @@ export class PrismaBankRepository extends BankRepository {
 		}
 	}
 
-	async delete(id: string): Promise<void> {
-		await this.db.bank.update({
-			where: { id, deletedAt: null },
-			data: { deletedAt: new Date() }
-		})
-	}
-
-	async hasActiveReferences(
+	async delete(
 		id: string,
 		currentYear: number,
 		currentMonth: number
-	): Promise<boolean> {
-		const [recurring, expense] = await Promise.all([
-			this.db.recurringExpense.findFirst({
-				where: {
-					bankId: id,
-					...activeRecurringFilter(currentYear, currentMonth)
-				},
-				select: { id: true }
-			}),
-			this.db.expense.findFirst({
-				where: {
-					bankId: id,
-					deletedAt: null,
-					budgetPeriod: openPeriodFilter(currentYear, currentMonth)
-				},
-				select: { id: true }
+	): Promise<void> {
+		await this.db.$transaction(async (tx) => {
+			await lockLookupForDelete(tx, "bank", id)
+			const [recurring, expense] = await Promise.all([
+				tx.recurringExpense.findFirst({
+					where: {
+						bankId: id,
+						...activeRecurringFilter(currentYear, currentMonth)
+					},
+					select: { id: true }
+				}),
+				tx.expense.findFirst({
+					where: {
+						bankId: id,
+						deletedAt: null,
+						budgetPeriod: openPeriodFilter(currentYear, currentMonth)
+					},
+					select: { id: true }
+				})
+			])
+			if (recurring !== null || expense !== null) {
+				throw new ConflictException(
+					`Cannot delete bank ${id}: it is referenced by active recurring expenses or expenses in the current or future budget periods`
+				)
+			}
+			await tx.bank.update({
+				where: { id, deletedAt: null },
+				data: { deletedAt: new Date() }
 			})
-		])
-		return recurring !== null || expense !== null
+		})
 	}
 }

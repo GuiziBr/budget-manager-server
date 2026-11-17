@@ -9,6 +9,7 @@ import {
 	activeRecurringFilter,
 	openPeriodFilter
 } from "@/infra/database/prisma/helpers/active-reference.filters"
+import { lockLookupForDelete } from "@/infra/database/prisma/helpers/lock-lookup"
 
 @Injectable()
 export class PrismaCategoryRepository extends CategoryRepository {
@@ -65,43 +66,47 @@ export class PrismaCategoryRepository extends CategoryRepository {
 		}
 	}
 
-	async delete(id: string): Promise<void> {
-		await this.db.category.update({
-			where: { id, deletedAt: null },
-			data: { deletedAt: new Date() }
-		})
-	}
-
-	async hasActiveReferences(
+	async delete(
 		id: string,
 		currentYear: number,
 		currentMonth: number
-	): Promise<boolean> {
-		const [recurring, expense, envelope] = await Promise.all([
-			this.db.recurringExpense.findFirst({
-				where: {
-					categoryId: id,
-					...activeRecurringFilter(currentYear, currentMonth)
-				},
-				select: { id: true }
-			}),
-			this.db.expense.findFirst({
-				where: {
-					categoryId: id,
-					deletedAt: null,
-					budgetPeriod: openPeriodFilter(currentYear, currentMonth)
-				},
-				select: { id: true }
-			}),
-			this.db.budgetEnvelope.findFirst({
-				where: {
-					categoryId: id,
-					deletedAt: null,
-					budgetPeriod: openPeriodFilter(currentYear, currentMonth)
-				},
-				select: { id: true }
+	): Promise<void> {
+		await this.db.$transaction(async (tx) => {
+			await lockLookupForDelete(tx, "category", id)
+			const [recurring, expense, envelope] = await Promise.all([
+				tx.recurringExpense.findFirst({
+					where: {
+						categoryId: id,
+						...activeRecurringFilter(currentYear, currentMonth)
+					},
+					select: { id: true }
+				}),
+				tx.expense.findFirst({
+					where: {
+						categoryId: id,
+						deletedAt: null,
+						budgetPeriod: openPeriodFilter(currentYear, currentMonth)
+					},
+					select: { id: true }
+				}),
+				tx.budgetEnvelope.findFirst({
+					where: {
+						categoryId: id,
+						deletedAt: null,
+						budgetPeriod: openPeriodFilter(currentYear, currentMonth)
+					},
+					select: { id: true }
+				})
+			])
+			if (recurring !== null || expense !== null || envelope !== null) {
+				throw new ConflictException(
+					`Cannot delete category ${id}: it is referenced by active recurring expenses, or by expenses or budget envelopes in the current or future budget periods`
+				)
+			}
+			await tx.category.update({
+				where: { id, deletedAt: null },
+				data: { deletedAt: new Date() }
 			})
-		])
-		return recurring !== null || expense !== null || envelope !== null
+		})
 	}
 }

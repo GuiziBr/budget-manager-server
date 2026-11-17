@@ -8,10 +8,9 @@ export abstract class CategoryRepository {
 	abstract findAllWithBudgetEnvelope(): Promise<Category[]>
 	abstract create(data: CreateCategoryDTO): Promise<Category>
 	abstract update(id: string, data: UpdateCategoryDTO): Promise<Category>
-	abstract delete(id: string): Promise<void>
-	abstract hasActiveReferences(
+	abstract delete(
 		id: string,
 		currentYear: number,
 		currentMonth: number
-	): Promise<boolean>
+	): Promise<void>
 }

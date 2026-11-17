@@ -1,5 +1,4 @@
 import {
-	ConflictException,
 	HttpException,
 	Injectable,
 	InternalServerErrorException,
@@ -81,17 +80,11 @@ export class CategoryService {
 		try {
 			await this.findById(id)
 			const now = new Date()
-			const inUse = await this.categoryRepository.hasActiveReferences(
+			await this.categoryRepository.delete(
 				id,
 				now.getUTCFullYear(),
 				now.getUTCMonth() + 1
 			)
-			if (inUse) {
-				throw new ConflictException(
-					`Cannot delete category ${id}: it is referenced by active recurring expenses, or by expenses or budget envelopes in the current or future budget periods`
-				)
-			}
-			await this.categoryRepository.delete(id)
 			this.logger.log(`Deleted category ${id}`)
 		} catch (error) {
 			if (error instanceof HttpException) throw error
