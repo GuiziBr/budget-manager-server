@@ -43,7 +43,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.7",
+    "@biomejs/biome": "^2.6.8",
     "@nestjs/cli": "^12.0.13",
     "@nestjs/schematics": "^12.0.13",
     "@swc/core": "^1.16.22",
