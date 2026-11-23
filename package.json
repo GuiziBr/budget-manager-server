@@ -61,7 +61,7 @@
     "typescript": "~6.0.2",
     "ultracite": "^8.2.1",
     "unplugin-swc": "^2.0.0",
-    "vitest": "^5.1.0",
+    "vitest": "^5.1.1",
     "webpack": "^5.112.2",
     "webpack-node-externals": "^3.0.0"
   },
