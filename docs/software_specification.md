@@ -172,7 +172,7 @@ All models include a `deleted_at` timestamp. No records are physically deleted. 
 
 ### Lookup Tables (Category, PaymentType, Bank, Store)
 
-- Names must be **unique case-insensitively** among non-deleted records within each table; duplicates return **409 Conflict**
+- Names must be **unique case-insensitively** among non-deleted records within each table (e.g., "Food" and "food" are duplicates); duplicates return **409 Conflict**. Enforced by a partial unique index on `lower(name) WHERE deleted_at IS NULL`; stored names keep their original casing
 - **Category / PaymentType** cannot be soft-deleted while actively referenced (see below); once deleted, they still appear on historical expenses but **cannot be selected when creating new expenses or recurring expenses**
 - **Bank / Store** cannot be soft-deleted while actively referenced (see below); existing expenses retain their `bankId` / `storeId` reference for historical display; soft-deleted Bank/Store cannot be selected for new or updated expenses
 - **Active reference** (applies to Category, PaymentType, Bank and Store): a non-deleted `RecurringExpense` that is not cancelled (or is cancelled on/after the first day of the current UTC month), or a non-deleted `Expense` in the current or a future budget period. Deleting such a record returns **409 Conflict**; references from past-period expenses do not block deletion.
