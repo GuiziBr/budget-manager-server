@@ -3,6 +3,12 @@
 --
 -- NOTE: this fails if active rows that differ only by case already exist.
 -- Rename or soft-delete the duplicates before applying.
+--
+-- Runs in one explicit transaction so a failed CREATE rolls back its DROP
+-- (Prisma otherwise commits each statement separately) and the original
+-- indexes stay in place.
+
+BEGIN;
 
 -- banks
 DROP INDEX "banks_name_active_key";
@@ -27,3 +33,5 @@ DROP INDEX "stores_name_active_key";
 CREATE UNIQUE INDEX "stores_name_active_key"
     ON "stores" (lower("name"))
     WHERE "deleted_at" IS NULL;
+
+COMMIT;
