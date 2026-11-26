@@ -38,7 +38,7 @@ model Category {
   recurringExpenses RecurringExpense[]
   budgetEnvelopes   BudgetEnvelope[]
 
-  // Name uniqueness enforced via partial index in migration (WHERE deleted_at IS NULL)
+  // Case-insensitive name uniqueness enforced via partial index on lower(name) in migration (WHERE deleted_at IS NULL)
   @@map("categories")
 }
 
@@ -53,7 +53,7 @@ model PaymentType {
   expenses          Expense[]
   recurringExpenses RecurringExpense[]
 
-  // Name uniqueness enforced via partial index in migration (WHERE deleted_at IS NULL)
+  // Case-insensitive name uniqueness enforced via partial index on lower(name) in migration (WHERE deleted_at IS NULL)
   @@map("payment_types")
 }
 
@@ -67,7 +67,7 @@ model Bank {
   expenses          Expense[]
   recurringExpenses RecurringExpense[]
 
-  // Name uniqueness enforced via partial index in migration (WHERE deleted_at IS NULL)
+  // Case-insensitive name uniqueness enforced via partial index on lower(name) in migration (WHERE deleted_at IS NULL)
   @@map("banks")
 }
 
@@ -81,7 +81,7 @@ model Store {
   expenses          Expense[]
   recurringExpenses RecurringExpense[]
 
-  // Name uniqueness enforced via partial index in migration (WHERE deleted_at IS NULL)
+  // Case-insensitive name uniqueness enforced via partial index on lower(name) in migration (WHERE deleted_at IS NULL)
   @@map("stores")
 }
 
